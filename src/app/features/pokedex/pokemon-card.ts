@@ -31,15 +31,17 @@ import { Icon } from '../../shared/ui/icon';
         <app-icon [name]="inTeam() ? 'check' : 'plus'" [size]="14" />
       </button>
 
-      <img
-        [src]="pokemon().spriteUrl"
-        [alt]="'Sprite de ' + pokemon().displayName"
-        width="96"
-        height="96"
-        loading="lazy"
-        decoding="async"
-        class="size-20 [image-rendering:pixelated] transition-transform duration-150 group-hover:scale-110 motion-reduce:transform-none"
-      />
+      <span class="grid size-20 shrink-0 place-items-center overflow-hidden">
+        <img
+          [src]="pokemon().spriteUrl"
+          [alt]="'Sprite de ' + pokemon().displayName"
+          width="96"
+          height="96"
+          loading="lazy"
+          decoding="async"
+          class="size-20 object-contain text-[10px] text-muted-foreground [image-rendering:pixelated] transition-transform duration-150 group-hover:scale-110 motion-reduce:transform-none"
+        />
+      </span>
 
       <span class="font-mono text-xs text-muted-foreground">{{ number() }}</span>
 

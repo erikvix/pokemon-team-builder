@@ -1,10 +1,5 @@
 import { Dialog } from '@angular/cdk/dialog';
-import {
-  CdkDrag,
-  CdkDragPlaceholder,
-  CdkDropList,
-  type CdkDragDrop,
-} from '@angular/cdk/drag-drop';
+import { CdkDrag, CdkDragPlaceholder, CdkDropList, type CdkDragDrop } from '@angular/cdk/drag-drop';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -13,6 +8,7 @@ import {
   inject,
   input,
   signal,
+  untracked,
 } from '@angular/core';
 import { MAX_TEAM_SIZE, TeamService, parseShareCode } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
@@ -50,6 +46,8 @@ export class TeamPage {
   protected readonly notice = signal<Notice>(null);
   protected readonly shareUrl = signal<string | null>(null);
   private readonly undoIds = signal<readonly number[] | null>(null);
+  /** Evita reimportar o mesmo link a cada mudança no time. */
+  private lastImportedCode: string | null = null;
 
   protected readonly canUndo = computed(() => this.undoIds() !== null);
 
@@ -57,11 +55,14 @@ export class TeamPage {
     // Importa o time do link só quando ele difere do que já está montado.
     effect(() => {
       const code = this.time();
-      if (!code) {
+      if (!code || code === this.lastImportedCode) {
         return;
       }
+      this.lastImportedCode = code;
       const ids = parseShareCode(code);
-      if (ids.length > 0 && ids.join('-') !== this.team.toShareCode()) {
+      // `untracked`: ler o time aqui não pode reagendar o effect a cada mudança.
+      const differs = untracked(() => ids.join('-') !== this.team.toShareCode());
+      if (ids.length > 0 && differs) {
         this.team.replace(ids);
         this.notice.set({ kind: 'info', text: 'Time carregado a partir do link compartilhado.' });
       }
@@ -122,7 +123,10 @@ export class TeamPage {
     this.shareUrl.set(url);
     try {
       await navigator.clipboard.writeText(url);
-      this.notice.set({ kind: 'success', text: 'Link do time copiado para a área de transferência.' });
+      this.notice.set({
+        kind: 'success',
+        text: 'Link do time copiado para a área de transferência.',
+      });
     } catch {
       this.notice.set({ kind: 'error', text: 'Não deu para copiar. O link está logo abaixo.' });
     }

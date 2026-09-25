@@ -40,7 +40,9 @@ export class PokemonDetailPage {
     return Number.isInteger(parsed) ? parsed : Number.NaN;
   });
 
-  protected readonly isKnownId = computed(() => this.pokemon.getSummary(this.numericId()) !== undefined);
+  protected readonly isKnownId = computed(
+    () => this.pokemon.getSummary(this.numericId()) !== undefined,
+  );
 
   private readonly resource = rxResource({
     params: () => (this.isKnownId() ? this.numericId() : undefined),

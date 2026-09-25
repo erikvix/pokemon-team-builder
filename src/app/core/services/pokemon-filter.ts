@@ -21,11 +21,7 @@ export const EMPTY_FILTER: PokemonFilter = { query: '', types: [], sort: 'number
 
 /** Minúsculas e sem acento, para a busca não depender de digitação exata. */
 export function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .trim();
+  return text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
 /** Casa por nome (trecho) ou por número da Pokédex (`25`, `#025`, `025`). */

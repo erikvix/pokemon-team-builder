@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest';
 import type { PokemonSummary } from '../models/pokemon.model';
 import { filterPokemon, matchesQuery, normalize } from './pokemon-filter';
 
-function make(id: number, name: string, types: PokemonSummary['types'], total: number): PokemonSummary {
+function make(
+  id: number,
+  name: string,
+  types: PokemonSummary['types'],
+  total: number,
+): PokemonSummary {
   return {
     id,
     name,

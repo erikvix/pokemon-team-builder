@@ -36,8 +36,9 @@ describe('App (shell)', () => {
   it('expõe um alternador de tema com rótulo acessível', () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    const toggle: HTMLButtonElement | null =
-      fixture.nativeElement.querySelector('button[aria-label*="tema"]');
+    const toggle: HTMLButtonElement | null = fixture.nativeElement.querySelector(
+      'button[aria-label*="tema"]',
+    );
     expect(toggle).not.toBeNull();
     expect(toggle?.getAttribute('aria-label')).toMatch(/tema (claro|escuro)/);
   });

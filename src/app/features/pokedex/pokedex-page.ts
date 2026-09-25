@@ -1,9 +1,26 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { rxResource, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs';
-import { POKEMON_TYPES, TYPE_LABEL, typeColorVar, type PokemonType } from '../../core/data/pokemon-types';
+import {
+  POKEMON_TYPES,
+  TYPE_LABEL,
+  typeColorVar,
+  type PokemonType,
+} from '../../core/data/pokemon-types';
 import { PokemonService } from '../../core/services/pokemon.service';
-import { SORT_KEYS, SORT_LABEL, filterPokemon, type SortKey } from '../../core/services/pokemon-filter';
+import {
+  SORT_KEYS,
+  SORT_LABEL,
+  filterPokemon,
+  type SortKey,
+} from '../../core/services/pokemon-filter';
 import { TeamService } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { CardDirective } from '../../shared/ui/card.directive';

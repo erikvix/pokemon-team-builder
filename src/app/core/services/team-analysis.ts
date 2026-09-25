@@ -101,7 +101,10 @@ function statTotalOf(member: PokemonSummary): number {
   return statTotal(member.stats);
 }
 
-function averageOf(members: readonly PokemonSummary[], pick: (m: PokemonSummary) => number): number {
+function averageOf(
+  members: readonly PokemonSummary[],
+  pick: (m: PokemonSummary) => number,
+): number {
   return members.reduce((sum, member) => sum + pick(member), 0) / members.length;
 }
 

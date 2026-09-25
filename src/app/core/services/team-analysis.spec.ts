@@ -106,10 +106,6 @@ describe('analyzeTeam', () => {
 
 describe('uniqueTypes', () => {
   it('remove repetições mantendo a ordem dos 18 tipos', () => {
-    expect(uniqueTypes([member(VENUSAUR), member(ZUBAT)])).toEqual([
-      'grass',
-      'poison',
-      'flying',
-    ]);
+    expect(uniqueTypes([member(VENUSAUR), member(ZUBAT)])).toEqual(['grass', 'poison', 'flying']);
   });
 });

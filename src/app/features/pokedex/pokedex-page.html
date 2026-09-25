@@ -89,7 +89,9 @@
 
     @if (showTypeFilter()) {
       <fieldset id="filtro-tipos" appCard class="flex flex-wrap gap-1.5 p-3">
-        <legend class="sr-only">Filtrar por tipo (mostra quem tem qualquer um dos tipos marcados)</legend>
+        <legend class="sr-only">
+          Filtrar por tipo (mostra quem tem qualquer um dos tipos marcados)
+        </legend>
         @for (type of allTypes; track type) {
           <button
             type="button"
@@ -123,9 +125,7 @@
       <app-icon name="alert" [size]="28" class="text-destructive" />
       <div>
         <p class="font-medium">Não deu para carregar a Pokédex.</p>
-        <p class="text-sm text-muted-foreground">
-          Verifique sua conexão e tente de novo.
-        </p>
+        <p class="text-sm text-muted-foreground">Verifique sua conexão e tente de novo.</p>
       </div>
       <button appButton variant="outline" type="button" (click)="retry()">
         <app-icon name="refresh" [size]="16" />

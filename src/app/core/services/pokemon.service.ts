@@ -1,6 +1,15 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap, throwError } from 'rxjs';
+import {
+  Observable,
+  catchError,
+  forkJoin,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  throwError,
+} from 'rxjs';
 import { GEN1_POKEDEX } from '../data/gen1-pokedex';
 import { isPokemonType, type PokemonType } from '../data/pokemon-types';
 import { artworkUrl, displayName, spriteUrl } from '../data/sprites';
@@ -159,7 +168,8 @@ export class PokemonService {
       stats,
       statTotal: statTotal(stats),
       spriteUrl: pokemon.sprites.front_default ?? spriteUrl(pokemon.id),
-      artworkUrl: pokemon.sprites.other?.['official-artwork']?.front_default ?? artworkUrl(pokemon.id),
+      artworkUrl:
+        pokemon.sprites.other?.['official-artwork']?.front_default ?? artworkUrl(pokemon.id),
       height: pokemon.height,
       weight: pokemon.weight,
       abilities: this.readAbilities(pokemon),
@@ -208,7 +218,10 @@ export class PokemonService {
     if (!entry) {
       return null;
     }
-    return entry.flavor_text.replace(/[\n\f\r­]/g, ' ').replace(/\s+/g, ' ').trim();
+    return entry.flavor_text
+      .replace(/[\n\f\r­]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   private readGenus(species: PokeApiSpecies | null): string | null {
@@ -246,7 +259,16 @@ function idFromSpeciesUrl(url: string): number | null {
   return Number.isFinite(id) ? id : null;
 }
 
-function describeTrigger(detail: { min_level: number | null; trigger: { name: string } | null; item: { name: string } | null; min_happiness: number | null } | undefined): string | null {
+function describeTrigger(
+  detail:
+    | {
+        min_level: number | null;
+        trigger: { name: string } | null;
+        item: { name: string } | null;
+        min_happiness: number | null;
+      }
+    | undefined,
+): string | null {
   if (!detail) {
     return null;
   }

@@ -65,11 +65,7 @@
       >
         <app-icon [name]="inTeam() ? 'x' : 'plus'" [size]="16" />
         {{
-          inTeam()
-            ? 'Remover do time'
-            : team.isFull()
-              ? 'Time cheio (6/6)'
-              : 'Adicionar ao time'
+          inTeam() ? 'Remover do time' : team.isFull() ? 'Time cheio (6/6)' : 'Adicionar ao time'
         }}
       </button>
     </header>
@@ -138,7 +134,8 @@
           <div class="flex items-baseline justify-between">
             <h2 class="text-sm font-semibold">Base stats</h2>
             <p class="text-sm text-muted-foreground">
-              Total <span class="font-mono font-medium text-foreground">{{ pokemon.statTotal }}</span>
+              Total
+              <span class="font-mono font-medium text-foreground">{{ pokemon.statTotal }}</span>
             </p>
           </div>
           <dl class="flex flex-col gap-1.5">
@@ -163,7 +160,9 @@
               }
               @for (group of weaknesses(); track group.multiplier) {
                 <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
-                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{
+                    group.label
+                  }}</span>
                   @for (type of group.types; track type) {
                     <app-type-badge [type]="type" size="sm" />
                   }
@@ -181,7 +180,9 @@
               }
               @for (group of resistances(); track group.multiplier) {
                 <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
-                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{
+                    group.label
+                  }}</span>
                   @for (type of group.types; track type) {
                     <app-type-badge [type]="type" size="sm" />
                   }
@@ -197,7 +198,9 @@
                 </h3>
                 @for (group of immunities(); track group.multiplier) {
                   <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
-                    <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                    <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{
+                      group.label
+                    }}</span>
                     @for (type of group.types; track type) {
                       <app-type-badge [type]="type" size="sm" />
                     }

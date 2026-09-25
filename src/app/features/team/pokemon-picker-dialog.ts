@@ -48,6 +48,7 @@ export interface PokemonPickerData {
           cdkFocusInitial
           [value]="queryInput()"
           (input)="onInput($event)"
+          (keydown)="onKeydown($event)"
         />
       </div>
       <button
@@ -132,6 +133,21 @@ export class PokemonPickerDialog {
 
   protected onInput(event: Event): void {
     this.queryInput.set((event.target as HTMLInputElement).value);
+  }
+
+  /** Enter na busca escolhe o primeiro resultado disponível. */
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      this.chooseFirst();
+    }
+  }
+
+  private chooseFirst(): void {
+    const first = this.results().find((pokemon) => !this.isInTeam(pokemon.id));
+    if (first) {
+      this.choose(first.id);
+    }
   }
 
   protected choose(id: number): void {

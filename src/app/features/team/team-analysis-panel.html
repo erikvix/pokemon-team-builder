@@ -13,7 +13,8 @@
             <span class="font-medium">Fraqueza comum:</span>
             {{ threshold }} membros ou mais são fracos a
             @for (type of analysis().commonWeaknesses; track type; let last = $last) {
-              <span class="font-medium">{{ typeLabel[type] }}</span>{{ last ? '.' : ', ' }}
+              <span class="font-medium">{{ typeLabel[type] }}</span
+              >{{ last ? '.' : ', ' }}
             }
           </p>
         </div>
@@ -26,7 +27,8 @@
             <span class="font-medium">Sem resistência:</span>
             ninguém no time resiste a
             @for (type of analysis().uncoveredTypes; track type; let last = $last) {
-              <span class="font-medium">{{ typeLabel[type] }}</span>{{ last ? '.' : ', ' }}
+              <span class="font-medium">{{ typeLabel[type] }}</span
+              >{{ last ? '.' : ', ' }}
             }
           </p>
         </div>
@@ -46,8 +48,8 @@
     <header class="border-b border-border px-4 py-3">
       <h2 class="text-sm font-semibold">Cobertura por tipo</h2>
       <p class="text-xs text-muted-foreground">
-        Quantos membros são fracos, resistem ou são imunes a cada tipo — e quantos atacam esse
-        tipo com vantagem.
+        Quantos membros são fracos, resistem ou são imunes a cada tipo — e quantos atacam esse tipo
+        com vantagem.
       </p>
     </header>
 
@@ -109,7 +111,9 @@
               </td>
               <td
                 class="px-2 py-1.5 text-center font-mono tabular-nums"
-                [class]="row.resistant > 0 ? 'font-semibold text-positive' : 'text-muted-foreground'"
+                [class]="
+                  row.resistant > 0 ? 'font-semibold text-positive' : 'text-muted-foreground'
+                "
               >
                 {{ row.resistant || '–' }}
               </td>
@@ -168,7 +172,8 @@
     <div class="flex items-baseline justify-between">
       <h2 class="text-sm font-semibold">Média de base stats</h2>
       <p class="text-sm text-muted-foreground">
-        Total <span class="font-mono font-medium text-foreground">{{ analysis().averageStatTotal }}</span>
+        Total
+        <span class="font-mono font-medium text-foreground">{{ analysis().averageStatTotal }}</span>
       </p>
     </div>
     @if (isEmpty()) {

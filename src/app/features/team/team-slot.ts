@@ -41,15 +41,17 @@ import { Icon } from '../../shared/ui/icon';
           <app-icon name="x" [size]="14" />
         </button>
 
-        <img
-          [src]="member.spriteUrl"
-          [alt]="'Sprite de ' + member.displayName"
-          width="80"
-          height="80"
-          loading="lazy"
-          decoding="async"
-          class="size-16 [image-rendering:pixelated]"
-        />
+        <span class="grid size-16 shrink-0 place-items-center overflow-hidden">
+          <img
+            [src]="member.spriteUrl"
+            [alt]="'Sprite de ' + member.displayName"
+            width="80"
+            height="80"
+            loading="lazy"
+            decoding="async"
+            class="size-16 object-contain text-[10px] text-muted-foreground [image-rendering:pixelated]"
+          />
+        </span>
 
         <a [routerLink]="['/pokemon', member.id]" class="rounded-sm text-sm font-semibold">
           {{ member.displayName }}
