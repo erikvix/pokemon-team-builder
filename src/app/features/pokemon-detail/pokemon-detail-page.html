@@ -1,0 +1,253 @@
+<a
+  appButton
+  variant="ghost"
+  size="sm"
+  routerLink="/pokedex"
+  class="mb-4 -ml-2 text-muted-foreground"
+>
+  <app-icon name="chevronLeft" [size]="16" />
+  Voltar para a Pokédex
+</a>
+
+@if (errorMessage(); as message) {
+  <div appCard class="flex flex-col items-center gap-3 p-10 text-center" role="alert">
+    <app-icon name="alert" [size]="28" class="text-destructive" />
+    <div>
+      <p class="font-medium">Não foi possível abrir este Pokémon.</p>
+      <p class="text-sm text-muted-foreground">{{ message }}</p>
+    </div>
+    <div class="flex gap-2">
+      @if (isKnownId()) {
+        <button appButton variant="outline" type="button" (click)="retry()">
+          <app-icon name="refresh" [size]="16" />
+          Tentar de novo
+        </button>
+      }
+      <a appButton variant="ghost" routerLink="/pokedex">Ver a Pokédex</a>
+    </div>
+  </div>
+} @else if (isLoading()) {
+  <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]" aria-busy="true">
+    <div appCard class="flex flex-col items-center gap-3 p-6">
+      <app-skeleton class="size-56 rounded-xl" />
+      <app-skeleton class="h-6 w-40" />
+      <app-skeleton class="h-4 w-24" />
+    </div>
+    <div class="flex flex-col gap-4">
+      <div appCard class="flex flex-col gap-3 p-6">
+        @for (key of statKeys; track key) {
+          <app-skeleton class="h-4 w-full" />
+        }
+      </div>
+      <div appCard class="flex flex-col gap-3 p-6">
+        <app-skeleton class="h-4 w-32" />
+        <app-skeleton class="h-8 w-full" />
+      </div>
+    </div>
+  </div>
+} @else if (detail(); as pokemon) {
+  <article class="flex flex-col gap-4">
+    <!-- Cabeçalho -->
+    <header class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p class="font-mono text-sm text-muted-foreground">{{ number() }}</p>
+        <h1 class="text-2xl font-semibold tracking-tight">{{ pokemon.displayName }}</h1>
+        @if (pokemon.genus) {
+          <p class="text-sm text-muted-foreground">{{ pokemon.genus }}</p>
+        }
+      </div>
+      <button
+        appButton
+        [variant]="inTeam() ? 'outline' : 'default'"
+        type="button"
+        [disabled]="!inTeam() && team.isFull()"
+        (click)="toggleTeam()"
+      >
+        <app-icon [name]="inTeam() ? 'x' : 'plus'" [size]="16" />
+        {{
+          inTeam()
+            ? 'Remover do time'
+            : team.isFull()
+              ? 'Time cheio (6/6)'
+              : 'Adicionar ao time'
+        }}
+      </button>
+    </header>
+
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <!-- Artwork e ficha -->
+      <div class="flex flex-col gap-4">
+        <div appCard class="flex flex-col items-center gap-3 p-6">
+          <img
+            [src]="pokemon.artworkUrl"
+            [alt]="'Artwork oficial de ' + pokemon.displayName"
+            width="320"
+            height="320"
+            loading="lazy"
+            decoding="async"
+            class="size-56 object-contain"
+          />
+          <div class="flex flex-wrap justify-center gap-1.5">
+            @for (type of pokemon.types; track type) {
+              <app-type-badge [type]="type" />
+            }
+          </div>
+        </div>
+
+        <div appCard class="flex flex-col gap-3 p-5">
+          <h2 class="text-sm font-semibold">Ficha</h2>
+          <dl class="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt class="text-xs text-muted-foreground">Altura</dt>
+              <dd class="font-medium tabular-nums">{{ height() }} m</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-muted-foreground">Peso</dt>
+              <dd class="font-medium tabular-nums">{{ weight() }} kg</dd>
+            </div>
+            <div class="col-span-2">
+              <dt class="text-xs text-muted-foreground">Habilidades</dt>
+              <dd class="flex flex-wrap gap-1.5 pt-1">
+                @for (ability of pokemon.abilities; track ability.name) {
+                  <span
+                    class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs"
+                  >
+                    {{ ability.displayName }}
+                    @if (ability.isHidden) {
+                      <span class="text-muted-foreground">(oculta)</span>
+                    }
+                  </span>
+                }
+              </dd>
+            </div>
+          </dl>
+          @if (pokemon.flavorText) {
+            <p class="border-t border-border pt-3 text-sm text-muted-foreground">
+              {{ pokemon.flavorText }}
+            </p>
+            <p class="text-[11px] text-muted-foreground/80">
+              Texto da Pokédex em inglês — a PokeAPI não tem versão em português.
+            </p>
+          }
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-4">
+        <!-- Base stats -->
+        <section appCard class="flex flex-col gap-2 p-5">
+          <div class="flex items-baseline justify-between">
+            <h2 class="text-sm font-semibold">Base stats</h2>
+            <p class="text-sm text-muted-foreground">
+              Total <span class="font-mono font-medium text-foreground">{{ pokemon.statTotal }}</span>
+            </p>
+          </div>
+          <dl class="flex flex-col gap-1.5">
+            @for (key of statKeys; track key) {
+              <app-stat-bar [stat]="key" [value]="pokemon.stats[key]" />
+            }
+          </dl>
+        </section>
+
+        <!-- Eficácia de tipos -->
+        <section appCard class="flex flex-col gap-3 p-5">
+          <h2 class="text-sm font-semibold">Eficácia de tipos</h2>
+
+          <div class="flex flex-col gap-3">
+            <div>
+              <h3 class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <app-icon name="alert" [size]="13" />
+                Toma mais dano de
+              </h3>
+              @if (weaknesses().length === 0) {
+                <p class="pt-1 text-sm text-muted-foreground">Nenhuma fraqueza.</p>
+              }
+              @for (group of weaknesses(); track group.multiplier) {
+                <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                  @for (type of group.types; track type) {
+                    <app-type-badge [type]="type" size="sm" />
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="border-t border-border pt-3">
+              <h3 class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <app-icon name="shield" [size]="13" />
+                Resiste a
+              </h3>
+              @if (resistances().length === 0) {
+                <p class="pt-1 text-sm text-muted-foreground">Não resiste a nenhum tipo.</p>
+              }
+              @for (group of resistances(); track group.multiplier) {
+                <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
+                  <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                  @for (type of group.types; track type) {
+                    <app-type-badge [type]="type" size="sm" />
+                  }
+                </div>
+              }
+            </div>
+
+            @if (immunities().length > 0) {
+              <div class="border-t border-border pt-3">
+                <h3 class="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <app-icon name="check" [size]="13" />
+                  Imune a
+                </h3>
+                @for (group of immunities(); track group.multiplier) {
+                  <div class="flex flex-wrap items-center gap-1.5 pt-1.5">
+                    <span class="w-8 font-mono text-xs font-semibold tabular-nums">{{ group.label }}</span>
+                    @for (type of group.types; track type) {
+                      <app-type-badge [type]="type" size="sm" />
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Linha evolutiva -->
+        @if (hasEvolution()) {
+          <section appCard class="flex flex-col gap-3 p-5">
+            <h2 class="text-sm font-semibold">Linha evolutiva</h2>
+            <ol class="flex flex-wrap items-center gap-2">
+              @for (stage of evolutionStages(); track $index; let last = $last) {
+                <li class="flex flex-col gap-2">
+                  @for (form of stage; track form.id) {
+                    <a
+                      [routerLink]="['/pokemon', form.id]"
+                      class="flex items-center gap-2 rounded-md border border-border px-2 py-1.5 transition-colors duration-150 hover:bg-accent"
+                      [attr.aria-current]="form.id === pokemon.id ? 'page' : null"
+                      [class.bg-accent]="form.id === pokemon.id"
+                    >
+                      <img
+                        [src]="form.spriteUrl"
+                        [alt]="''"
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                        decoding="async"
+                        class="size-10 [image-rendering:pixelated]"
+                      />
+                      <span class="text-sm font-medium">{{ form.displayName }}</span>
+                      @if (form.trigger) {
+                        <span class="text-xs text-muted-foreground">{{ form.trigger }}</span>
+                      }
+                    </a>
+                  }
+                </li>
+                @if (!last) {
+                  <li aria-hidden="true" class="text-muted-foreground">
+                    <app-icon name="chevronRight" [size]="18" />
+                  </li>
+                }
+              }
+            </ol>
+          </section>
+        }
+      </div>
+    </div>
+  </article>
+}

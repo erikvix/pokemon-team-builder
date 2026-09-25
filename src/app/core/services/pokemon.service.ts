@@ -68,11 +68,26 @@ export class PokemonService {
     this.summaries.map((summary) => [summary.id, summary]),
   );
 
-  /** Os 151 da geração 1, em ordem de Pokédex. */
-  listAll(): readonly PokemonSummary[] {
+  /**
+   * Os 151 da geração 1, em ordem de Pokédex.
+   *
+   * Assíncrono de propósito: hoje resolve na hora (índice local), mas a
+   * assinatura já é a que o backend Spring vai ter, então as telas tratam
+   * carregando/erro desde agora.
+   */
+  list(): Observable<readonly PokemonSummary[]> {
+    return of(this.summaries);
+  }
+
+  /**
+   * Acesso direto ao índice local, sem passar por `Observable`. Existe porque
+   * o índice é local e síncrono; some junto com ele quando o backend entrar.
+   */
+  listAllSync(): readonly PokemonSummary[] {
     return this.summaries;
   }
 
+  /** Busca pontual no índice local — usada para resolver ids do time. */
   getSummary(id: number): PokemonSummary | undefined {
     return this.byId.get(id);
   }

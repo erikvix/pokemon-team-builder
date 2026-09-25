@@ -1,0 +1,184 @@
+<div class="flex flex-col gap-4">
+  <!-- Alertas -->
+  @if (!isEmpty()) {
+    <div class="flex flex-col gap-2">
+      @if (analysis().commonWeaknesses.length > 0) {
+        <div
+          appCard
+          class="flex items-start gap-2 border-negative/40 bg-negative/10 p-3 text-sm"
+          role="status"
+        >
+          <app-icon name="alert" [size]="16" class="mt-0.5 shrink-0 text-negative" />
+          <p>
+            <span class="font-medium">Fraqueza comum:</span>
+            {{ threshold }} membros ou mais são fracos a
+            @for (type of analysis().commonWeaknesses; track type; let last = $last) {
+              <span class="font-medium">{{ typeLabel[type] }}</span>{{ last ? '.' : ', ' }}
+            }
+          </p>
+        </div>
+      }
+
+      @if (analysis().uncoveredTypes.length > 0) {
+        <div appCard class="flex items-start gap-2 p-3 text-sm" role="status">
+          <app-icon name="shield" [size]="16" class="mt-0.5 shrink-0 text-muted-foreground" />
+          <p>
+            <span class="font-medium">Sem resistência:</span>
+            ninguém no time resiste a
+            @for (type of analysis().uncoveredTypes; track type; let last = $last) {
+              <span class="font-medium">{{ typeLabel[type] }}</span>{{ last ? '.' : ', ' }}
+            }
+          </p>
+        </div>
+      }
+
+      @if (!hasAlerts()) {
+        <div appCard class="flex items-center gap-2 border-positive/40 bg-positive/10 p-3 text-sm">
+          <app-icon name="check" [size]="16" class="shrink-0 text-positive" />
+          <p>Nenhuma fraqueza comum e todo tipo tem ao menos uma resistência.</p>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Matriz defensiva -->
+  <section appCard class="overflow-hidden">
+    <header class="border-b border-border px-4 py-3">
+      <h2 class="text-sm font-semibold">Cobertura por tipo</h2>
+      <p class="text-xs text-muted-foreground">
+        Quantos membros são fracos, resistem ou são imunes a cada tipo — e quantos atacam esse
+        tipo com vantagem.
+      </p>
+    </header>
+
+    <div class="max-h-[28rem] overflow-y-auto">
+      <table class="w-full border-collapse text-sm">
+        <caption class="sr-only">
+          Cobertura defensiva e ofensiva do time pelos 18 tipos
+        </caption>
+        <thead class="sticky top-0 bg-card">
+          <tr class="border-b border-border text-xs text-muted-foreground">
+            <th scope="col" class="px-4 py-2 text-left font-medium">Tipo</th>
+            <th scope="col" class="px-2 py-2 text-center font-medium" title="Membros fracos">
+              Fracos
+            </th>
+            <th scope="col" class="px-2 py-2 text-center font-medium" title="Membros que resistem">
+              Resistem
+            </th>
+            <th scope="col" class="px-2 py-2 text-center font-medium" title="Membros imunes">
+              Imunes
+            </th>
+            <th
+              scope="col"
+              class="px-4 py-2 text-center font-medium"
+              title="Membros que atacam esse tipo com vantagem"
+            >
+              Atacam
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of analysis().rows; track row.type) {
+            <tr
+              class="border-b border-border/60 last:border-0"
+              [class]="row.isCommonWeakness ? 'bg-negative/10' : ''"
+            >
+              <th scope="row" class="px-4 py-1.5 text-left font-normal">
+                <span class="flex items-center gap-2">
+                  <span
+                    class="size-2.5 shrink-0 rounded-full"
+                    [style.background-color]="typeColor(row.type)"
+                    aria-hidden="true"
+                  ></span>
+                  {{ typeLabel[row.type] }}
+                  @if (row.isCommonWeakness) {
+                    <app-icon
+                      name="alert"
+                      [size]="13"
+                      class="text-negative"
+                      [attr.aria-label]="'Fraqueza comum do time'"
+                    />
+                  }
+                </span>
+              </th>
+              <td
+                class="px-2 py-1.5 text-center font-mono tabular-nums"
+                [class]="row.weak > 0 ? 'font-semibold text-negative' : 'text-muted-foreground'"
+              >
+                {{ row.weak || '–' }}
+              </td>
+              <td
+                class="px-2 py-1.5 text-center font-mono tabular-nums"
+                [class]="row.resistant > 0 ? 'font-semibold text-positive' : 'text-muted-foreground'"
+              >
+                {{ row.resistant || '–' }}
+              </td>
+              <td class="px-2 py-1.5 text-center font-mono tabular-nums text-muted-foreground">
+                {{ row.immune || '–' }}
+              </td>
+              <td class="px-4 py-1.5 text-center font-mono tabular-nums">
+                @if (row.offense > 0) {
+                  <span class="font-semibold">{{ row.offense }}</span>
+                } @else if (analysis().memberCount > 0) {
+                  <span class="text-muted-foreground" title="Ninguém ataca esse tipo com vantagem">
+                    –
+                  </span>
+                } @else {
+                  <span class="text-muted-foreground">–</span>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Cobertura ofensiva -->
+  <section appCard class="flex flex-col gap-2 p-4">
+    <h2 class="text-sm font-semibold">Cobertura ofensiva</h2>
+    @if (isEmpty()) {
+      <p class="text-sm text-muted-foreground">Adicione Pokémon para ver a cobertura.</p>
+    } @else {
+      <div>
+        <p class="pb-1.5 text-xs text-muted-foreground">Tipos que o time tem em mãos</p>
+        <div class="flex flex-wrap gap-1.5">
+          @for (type of analysis().offensiveTypes; track type) {
+            <app-type-badge [type]="type" size="sm" />
+          }
+        </div>
+      </div>
+      @if (analysis().offensiveGaps.length > 0) {
+        <div class="border-t border-border pt-2">
+          <p class="pb-1.5 text-xs text-muted-foreground">
+            Sem vantagem contra ({{ analysis().offensiveGaps.length }})
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            @for (type of analysis().offensiveGaps; track type) {
+              <app-type-badge [type]="type" size="sm" />
+            }
+          </div>
+        </div>
+      }
+    }
+  </section>
+
+  <!-- Média de stats -->
+  <section appCard class="flex flex-col gap-2 p-4">
+    <div class="flex items-baseline justify-between">
+      <h2 class="text-sm font-semibold">Média de base stats</h2>
+      <p class="text-sm text-muted-foreground">
+        Total <span class="font-mono font-medium text-foreground">{{ analysis().averageStatTotal }}</span>
+      </p>
+    </div>
+    @if (isEmpty()) {
+      <p class="text-sm text-muted-foreground">Adicione Pokémon para ver a média.</p>
+    } @else {
+      <dl class="flex flex-col gap-1.5">
+        @for (key of statKeys; track key) {
+          <app-stat-bar [stat]="key" [value]="analysis().averageStats[key]" />
+        }
+      </dl>
+    }
+  </section>
+</div>

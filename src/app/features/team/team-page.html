@@ -1,0 +1,148 @@
+<div class="flex flex-col gap-4">
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-xl font-semibold tracking-tight">Meu time</h1>
+      <p class="text-sm text-muted-foreground">
+        Até {{ maxTeamSize }} Pokémon. Arraste os cards para reordenar — ou use as setas de cada
+        slot pelo teclado.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button
+        appButton
+        variant="outline"
+        size="sm"
+        type="button"
+        [disabled]="team.isEmpty()"
+        (click)="save()"
+      >
+        <app-icon name="check" [size]="15" />
+        Salvar
+      </button>
+      <button
+        appButton
+        variant="outline"
+        size="sm"
+        type="button"
+        [disabled]="team.isEmpty()"
+        (click)="share()"
+      >
+        <app-icon name="share" [size]="15" />
+        Compartilhar
+      </button>
+      <button
+        appButton
+        variant="ghost"
+        size="sm"
+        type="button"
+        class="text-muted-foreground hover:text-destructive"
+        [disabled]="team.isEmpty()"
+        (click)="clear()"
+      >
+        <app-icon name="trash" [size]="15" />
+        Limpar
+      </button>
+    </div>
+  </div>
+
+  <!-- Avisos das ações -->
+  <div aria-live="polite">
+    @if (notice(); as message) {
+      <div
+        appCard
+        class="flex flex-wrap items-center gap-2 p-3 text-sm"
+        [class]="
+          message.kind === 'success'
+            ? 'border-positive/40 bg-positive/10'
+            : message.kind === 'error'
+              ? 'border-negative/40 bg-negative/10'
+              : ''
+        "
+      >
+        <app-icon
+          [name]="message.kind === 'error' ? 'alert' : 'check'"
+          [size]="15"
+          class="shrink-0"
+        />
+        <span>{{ message.text }}</span>
+        @if (canUndo()) {
+          <button appButton variant="outline" size="sm" type="button" (click)="undo()">
+            Desfazer
+          </button>
+        }
+        <button
+          appButton
+          variant="ghost"
+          size="icon-sm"
+          type="button"
+          class="ml-auto"
+          aria-label="Fechar aviso"
+          (click)="notice.set(null)"
+        >
+          <app-icon name="x" [size]="14" />
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (shareUrl(); as url) {
+    <label class="flex flex-col gap-1 text-xs text-muted-foreground">
+      Link do time
+      <input
+        class="h-9 w-full rounded-md border border-input bg-muted px-3 font-mono text-xs text-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+        readonly
+        [value]="url"
+        (focus)="$any($event.target).select()"
+      />
+    </label>
+  }
+
+  <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+    <!-- Slots -->
+    <section aria-label="Slots do time">
+      <ul
+        class="grid grid-cols-2 gap-3 sm:grid-cols-3"
+        cdkDropList
+        cdkDropListOrientation="mixed"
+        (cdkDropListDropped)="drop($event)"
+      >
+        @for (member of team.members(); track member.id; let i = $index) {
+          <li cdkDrag class="cursor-grab active:cursor-grabbing">
+            <app-team-slot
+              [pokemon]="member"
+              [index]="i"
+              [canMoveBack]="i > 0"
+              [canMoveForward]="i < team.size() - 1"
+              (remove)="remove(member.id)"
+              (moveBack)="team.move(i, i - 1)"
+              (moveForward)="team.move(i, i + 1)"
+            />
+            <div
+              *cdkDragPlaceholder
+              class="h-full min-h-[11rem] rounded-lg border-2 border-dashed border-foreground/30 bg-accent/40"
+            ></div>
+          </li>
+        }
+
+        @for (slot of team.slots().slice(team.size()); track $index; let i = $index) {
+          <li>
+            <app-team-slot [index]="team.size() + i" (pick)="openPicker(team.size() + i)" />
+          </li>
+        }
+      </ul>
+
+      @if (team.isEmpty()) {
+        <p class="pt-4 text-center text-sm text-muted-foreground">
+          Time vazio. Clique num slot para buscar, ou use o
+          <span class="font-medium text-foreground">+</span> dos cards na Pokédex.
+        </p>
+      }
+    </section>
+
+    <!-- Análise -->
+    <aside aria-label="Análise do time">
+      <app-team-analysis-panel [analysis]="team.analysis()" />
+    </aside>
+  </div>
+</div>
