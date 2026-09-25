@@ -12,8 +12,8 @@ export interface Game {
   /** Faixa da Pokédex nacional coberta pelo jogo. */
   readonly range: { readonly from: number; readonly to: number };
   readonly year: number;
-  /** Ids dos iniciais, usados como ilustração do card. */
-  readonly starterIds: readonly number[];
+  /** Logo do jogo (SVG em `public/games/`), usado como ilustração do card. */
+  readonly logo: string;
   /** Tipos que dão o acento visual do card (Fogo e Planta, no caso). */
   readonly accentTypes: readonly PokemonType[];
   readonly summary: string;
@@ -27,7 +27,7 @@ export const GAMES: readonly Game[] = [
     region: 'Kanto',
     range: { from: 1, to: 151 },
     year: 2004,
-    starterIds: [4, 1, 7],
+    logo: 'games/firered.svg',
     accentTypes: ['fire', 'grass'],
     summary: 'Os 151 originais de Kanto, de Bulbasaur a Mew.',
   },

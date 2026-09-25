@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { typeColorVar } from '../../core/data/pokemon-types';
-import { pokedexNumber, spriteUrl } from '../../core/data/sprites';
+import { pokedexNumber } from '../../core/data/sprites';
 import { MAX_TEAM_SIZE } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { CardDirective } from '../../shared/ui/card.directive';
@@ -29,24 +29,17 @@ import type { Game } from './game.model';
       ></span>
 
       <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6">
-        <!-- Iniciais -->
-        <div class="flex shrink-0 -space-x-3" aria-hidden="true">
-          @for (id of game().starterIds; track id) {
-            <span
-              class="grid size-16 place-items-center overflow-hidden rounded-full border border-border bg-muted/60 transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transform-none"
-            >
-              <img
-                [src]="sprite(id)"
-                alt=""
-                width="64"
-                height="64"
-                loading="lazy"
-                decoding="async"
-                class="size-14 object-contain [image-rendering:pixelated]"
-              />
-            </span>
-          }
-        </div>
+        <!-- Logo do jogo. O alt vai vazio de propósito: o nome já está no
+             título abaixo, e repetir viraria leitura dupla no leitor de tela. -->
+        <img
+          [src]="game().logo"
+          alt=""
+          width="1495"
+          height="884"
+          loading="lazy"
+          decoding="async"
+          class="h-auto w-44 shrink-0 self-center transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transform-none sm:w-48"
+        />
 
         <div class="min-w-0 flex-1">
           <p class="text-xs font-medium text-muted-foreground">
@@ -108,8 +101,4 @@ export class GameCard {
     const stops = this.game().accentTypes.map(typeColorVar);
     return `linear-gradient(90deg, ${stops.join(', ')})`;
   });
-
-  protected sprite(id: number): string {
-    return spriteUrl(id);
-  }
 }

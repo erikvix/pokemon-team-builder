@@ -55,7 +55,9 @@ src/app/
     pokemon-detail/  ficha, stats, eficácia de tipos, linha evolutiva
     team/            slots, diálogo de busca, análise do time
     not-found/       404
+public/games/       logos dos jogos em SVG
 scripts/generate-pokedex.mjs
+scripts/vectorize-logo.py
 ```
 
 ## Telas
@@ -107,6 +109,17 @@ e volta sozinho no próximo acesso — o botão "Salvar" apenas confirma isso em
 voz alta. "Compartilhar" copia uma URL com o time na query string
 (`/team?time=6-9-3-25`), que qualquer pessoa abre direto montado.
 
+**O logo do jogo é SVG vetorizado, não bitmap.** `public/games/firered.svg`
+saiu de um traçado por camadas de cor do logo oficial: cada cor vira um `path`,
+os dois blocos ("Pokémon" e "FireRed Version") são separados por componente
+conexo e cada um tem sua ordem de pintura, com máscara cumulativa para não
+abrir fresta entre camadas. São 57 kB (21 kB com gzip) que escalam em qualquer
+densidade de tela. `scripts/vectorize-logo.py` fica versionado para o arquivo
+ser reproduzível — ele não roda no build.
+
+O `alt` da imagem é vazio de propósito: o nome do jogo já está no título ao
+lado, e repetir causaria leitura dupla no leitor de tela.
+
 **A home é uma escolha de jogo.** A entrada do app não é mais a Pokédex: é um
 card único do FireRed/LeafGreen que leva ao builder. Os jogos vivem numa lista
 tipada (`features/home/game.model.ts`), então acrescentar outro é adicionar uma
@@ -139,6 +152,14 @@ componentes (shell e card da Pokédex).
 - Sem PWA/offline: o detalhe depende da PokeAPI estar no ar.
 - Troca do índice local pelo backend Spring quando ele existir (mexe só em
   `PokemonService`).
+
+## Marcas
+
+Pokémon, os nomes das criaturas e os logos dos jogos são marcas registradas da
+Nintendo / Creatures / GAME FREAK. Os sprites vêm da PokeAPI e o logo em
+`public/games/` é derivado do material oficial. Isto é um projeto de fã, sem
+fins comerciais e sem vínculo com os detentores dos direitos — vale rever esse
+ponto antes de qualquer uso comercial.
 
 ## Fora de escopo nesta fase
 
