@@ -100,7 +100,7 @@
 
   <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
     <!-- Slots -->
-    <section aria-label="Slots do time">
+    <section class="min-w-0" aria-label="Slots do time">
       <ul
         class="grid grid-cols-2 gap-3 sm:grid-cols-3"
         cdkDropList
@@ -140,8 +140,8 @@
       }
     </section>
 
-    <!-- Análise -->
-    <aside aria-label="Análise do time">
+    <!-- `min-w-0`: sem isso a tabela da análise estica a coluna do grid. -->
+    <aside class="min-w-0" aria-label="Análise do time">
       <app-team-analysis-panel [analysis]="team.analysis()" />
     </aside>
   </div>
