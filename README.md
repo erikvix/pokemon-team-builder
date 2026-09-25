@@ -62,6 +62,7 @@ scripts/generate-pokedex.mjs
 
 | Rota           | O que faz                                                      |
 | -------------- | -------------------------------------------------------------- |
+| `/`            | Escolha do jogo — hoje só FireRed/LeafGreen; leva para `/team` |
 | `/pokedex`     | Grid dos 151, busca com debounce, filtro por tipo, ordenação   |
 | `/pokemon/:id` | Artwork, ficha, base stats, eficácia de tipos, linha evolutiva |
 | `/team`        | 6 slots com drag-and-drop e a análise completa do time         |
@@ -105,6 +106,12 @@ brigaria com o número de colunas variando de 2 a 6.
 e volta sozinho no próximo acesso — o botão "Salvar" apenas confirma isso em
 voz alta. "Compartilhar" copia uma URL com o time na query string
 (`/team?time=6-9-3-25`), que qualquer pessoa abre direto montado.
+
+**A home é uma escolha de jogo.** A entrada do app não é mais a Pokédex: é um
+card único do FireRed/LeafGreen que leva ao builder. Os jogos vivem numa lista
+tipada (`features/home/game.model.ts`), então acrescentar outro é adicionar uma
+entrada — não mexer na tela. A Pokédex continua acessível pelo header e por um
+atalho na própria home.
 
 **Tema.** Claro e escuro com toggle no header; a classe `dark` é aplicada por
 um script inline no `index.html` antes do primeiro paint, para não piscar.

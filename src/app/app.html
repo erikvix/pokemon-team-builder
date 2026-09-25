@@ -10,7 +10,7 @@
 <header class="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
   <div class="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4">
     <a
-      routerLink="/pokedex"
+      routerLink="/"
       class="mr-2 flex items-center gap-2 rounded-md font-semibold tracking-tight"
       aria-label="Pokémon Team Builder — início"
     >
@@ -23,16 +23,29 @@
         appButton
         variant="ghost"
         size="sm"
+        routerLink="/"
+        routerLinkActive="bg-accent text-accent-foreground"
+        [routerLinkActiveOptions]="{ exact: true }"
+        ariaCurrentWhenActive="page"
+      >
+        Jogos
+      </a>
+      <a
+        appButton
+        variant="ghost"
+        size="sm"
         routerLink="/pokedex"
         routerLinkActive="bg-accent text-accent-foreground"
         ariaCurrentWhenActive="page"
       >
         Pokédex
       </a>
+      <!-- No mobile o contador do time ao lado já leva para esta tela. -->
       <a
         appButton
         variant="ghost"
         size="sm"
+        class="hidden sm:inline-flex"
         routerLink="/team"
         routerLinkActive="bg-accent text-accent-foreground"
         ariaCurrentWhenActive="page"

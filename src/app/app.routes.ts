@@ -3,7 +3,12 @@ import type { Routes } from '@angular/router';
 const APP_NAME = 'Pokémon Team Builder';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'pokedex' },
+  {
+    path: '',
+    pathMatch: 'full',
+    title: `Escolha o jogo — ${APP_NAME}`,
+    loadComponent: () => import('./features/home/home-page').then((m) => m.HomePage),
+  },
   {
     path: 'pokedex',
     title: `Pokédex — ${APP_NAME}`,
