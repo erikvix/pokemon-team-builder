@@ -13,9 +13,14 @@ para fundamentos visuais) e siga-as.
 
 ## Antes de escrever qualquer código: me interrogue (grill me)
 
-Não gere nenhum arquivo antes de me fazer as perguntas abaixo e receber as
-respostas. Faça-as em uma única rodada, agrupadas, com uma recomendação sua ao
-lado de cada uma para eu só confirmar:
+Se a skill `grill-me` (marketplace `mattpocock/skills`) estiver instalada, **eu**
+vou invocá-la com `/grill-me` — ela é user-invoked e você não consegue chamá-la
+sozinho. Nesse caso, use as perguntas abaixo como pauta da entrevista.
+
+Se ela não estiver disponível, conduza a entrevista você mesmo: não gere nenhum
+arquivo antes de me fazer as perguntas abaixo e receber as respostas. Faça-as em
+uma única rodada, agrupadas, com uma recomendação sua ao lado de cada uma para eu
+só confirmar:
 
 1. **Escopo de telas do MVP** — Pokédex (grid dos 151), detalhe do Pokémon,
    builder do time (6 slots) e análise de cobertura de tipos. Alguma sobra ou
@@ -131,6 +136,7 @@ cálculo de dano, EVs/IVs/naturezas. Não crie nada disso "por adiantamento".
 
 ## Como trabalhar
 
-Responda primeiro com as perguntas da seção "grill me". Depois das respostas,
+Responda primeiro com as perguntas da seção "grill me" (ou espere o
+`/grill-me`, se eu o invocar). Depois das respostas,
 mostre um plano curto (estrutura de pastas + ordem de implementação) e só então
 comece a escrever código, commitando em etapas coerentes.
