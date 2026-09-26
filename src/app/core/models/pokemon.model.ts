@@ -91,3 +91,28 @@ export interface PokemonDetail extends PokemonSummary {
   /** Linha evolutiva completa, em ordem; vazia se a espécie não evolui. */
   readonly evolutionLine: readonly EvolutionStage[];
 }
+
+export type MoveCategory = 'physical' | 'special' | 'status';
+
+/** Como o golpe é aprendido — ordem em que o modal de ataques mostra. */
+export type MoveLearnMethod = 'levelUp' | 'machine' | 'tutor' | 'egg';
+
+/** Um golpe que o Pokémon aprende, com os dados do jogo selecionado. */
+export interface PokemonMove {
+  readonly name: string;
+  readonly displayName: string;
+  /** `null` é o tipo "???" (Curse, na geração 3). */
+  readonly type: PokemonType | null;
+  readonly category: MoveCategory;
+  readonly power: number | null;
+  readonly accuracy: number | null;
+  readonly pp: number | null;
+  readonly description: string | null;
+  /** Nível em que aprende — só em `levelUp`; 1 inclui os golpes iniciais. */
+  readonly level: number | null;
+  /** `TM24`, `HM03` — só em `machine`. */
+  readonly machine: string | null;
+}
+
+/** Tudo o que o Pokémon aprende no jogo, agrupado por forma de aprender. */
+export type PokemonMoveset = Readonly<Record<MoveLearnMethod, readonly PokemonMove[]>>;

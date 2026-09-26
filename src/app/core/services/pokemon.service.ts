@@ -4,6 +4,7 @@ import {
   Observable,
   catchError,
   forkJoin,
+  from,
   map,
   of,
   shareReplay,
@@ -23,10 +24,14 @@ import {
   statTotal,
   type BaseStats,
   type EvolutionStage,
+  type MoveLearnMethod,
   type PokemonAbility,
   type PokemonDetail,
+  type PokemonMove,
+  type PokemonMoveset,
   type PokemonSummary,
 } from '../models/pokemon.model';
+import type { FrlgLearnset, FrlgMove } from '../data/frlg-moves';
 
 const API_BASE = 'https://pokeapi.co/api/v2';
 
@@ -61,6 +66,13 @@ const ITEM_LABEL: Readonly<Record<string, string>> = {
 export class PokemonService {
   private readonly http = inject(HttpClient);
   private readonly detailCache = new Map<number, Observable<PokemonDetail>>();
+  /** Índice de golpes (~160 kB): só baixa quando alguém abre os ataques. */
+  private readonly movesData$ = from(import('../data/frlg-moves')).pipe(
+    catchError((error: unknown) =>
+      throwError(() => new PokemonDataError('Não foi possível carregar os ataques.', error)),
+    ),
+    shareReplay({ bufferSize: 1, refCount: false }),
+  );
 
   private readonly summaries: readonly PokemonSummary[] = GEN1_POKEDEX.map((entry) => ({
     id: entry.id,
@@ -139,6 +151,23 @@ export class PokemonService {
 
     this.detailCache.set(id, request);
     return request;
+  }
+
+  /**
+   * Golpes que o Pokémon aprende em FireRed/LeafGreen, com poder, precisão e
+   * PP daqueles jogos. Vem de um índice gerado (`frlg-moves.ts`), carregado
+   * sob demanda.
+   */
+  getMoves(id: number): Observable<PokemonMoveset> {
+    return this.movesData$.pipe(
+      map(({ FRLG_MOVES, FRLG_LEARNSETS }) => {
+        const learnset = FRLG_LEARNSETS[id];
+        if (!learnset) {
+          throw new PokemonDataError(`Não encontramos os ataques do Pokémon #${id}.`);
+        }
+        return toMoveset(learnset, FRLG_MOVES);
+      }),
+    );
   }
 
   private toDomainError(error: unknown, id: number): PokemonDataError {
@@ -251,6 +280,47 @@ export class PokemonService {
       current,
     );
   }
+}
+
+function toMoveset(
+  learnset: FrlgLearnset,
+  moves: Readonly<Record<string, FrlgMove>>,
+): PokemonMoveset {
+  const build = (name: string, level: number | null = null): PokemonMove[] => {
+    const move = moves[name];
+    if (!move) {
+      return [];
+    }
+    return [
+      {
+        name,
+        displayName: displayName(name),
+        type: move.type,
+        category: move.category,
+        power: move.power,
+        accuracy: move.accuracy,
+        pp: move.pp,
+        description: move.description,
+        level,
+        machine: move.machine,
+      },
+    ];
+  };
+  const byName = (a: PokemonMove, b: PokemonMove): number =>
+    a.displayName.localeCompare(b.displayName);
+  // TM01…TM50 antes de HM01…HM08, como na bolsa do jogo.
+  const machineRank = (move: PokemonMove): number => {
+    const machine = move.machine ?? '';
+    return (machine.startsWith('HM') ? 100 : 0) + (Number.parseInt(machine.slice(2), 10) || 0);
+  };
+  const byMachine = (a: PokemonMove, b: PokemonMove): number => machineRank(a) - machineRank(b);
+
+  return {
+    levelUp: learnset.levelUp.flatMap(([level, name]) => build(name, level)),
+    machine: learnset.machine.flatMap((name) => build(name)).sort(byMachine),
+    tutor: learnset.tutor.flatMap((name) => build(name)).sort(byName),
+    egg: learnset.egg.flatMap((name) => build(name)).sort(byName),
+  } satisfies Record<MoveLearnMethod, readonly PokemonMove[]>;
 }
 
 function idFromSpeciesUrl(url: string): number | null {

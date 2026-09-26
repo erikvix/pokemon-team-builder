@@ -26,6 +26,17 @@
         size="sm"
         type="button"
         [disabled]="team.isEmpty()"
+        (click)="openMoves()"
+      >
+        <app-icon name="zap" [size]="15" />
+        Ataques
+      </button>
+      <button
+        appButton
+        variant="outline"
+        size="sm"
+        type="button"
+        [disabled]="team.isEmpty()"
         (click)="share()"
       >
         <app-icon name="share" [size]="15" />
@@ -115,6 +126,7 @@
               [canMoveBack]="i > 0"
               [canMoveForward]="i < team.size() - 1"
               (remove)="remove(member.id)"
+              (moves)="openMoves(member.id)"
               (moveBack)="team.move(i, i - 1)"
               (moveForward)="team.move(i, i + 1)"
             />

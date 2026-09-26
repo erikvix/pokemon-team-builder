@@ -16,6 +16,7 @@ import { CardDirective } from '../../shared/ui/card.directive';
 import { Icon } from '../../shared/ui/icon';
 import { PokemonPickerDialog, type PokemonPickerData } from './pokemon-picker-dialog';
 import { TeamAnalysisPanel } from './team-analysis-panel';
+import { TeamMovesDialog, type TeamMovesData } from './team-moves-dialog';
 import { TeamSlot } from './team-slot';
 
 type Notice = { readonly kind: 'info' | 'success' | 'error'; readonly text: string } | null;
@@ -86,6 +87,22 @@ export class TeamPage {
           this.team.add(id);
         }
       });
+  }
+
+  /** Abre os ataques do time; `id` escolhe o membro selecionado de início. */
+  protected openMoves(id?: number): void {
+    const members = this.team.members();
+    const first = members[0];
+    if (!first) {
+      return;
+    }
+    const data: TeamMovesData = { members, initialId: id ?? first.id };
+    this.dialog.open(TeamMovesDialog, {
+      data,
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+      panelClass: 'outline-none',
+    });
   }
 
   protected drop(event: CdkDragDrop<unknown>): void {

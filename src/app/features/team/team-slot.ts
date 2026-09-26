@@ -9,7 +9,7 @@ import { Icon } from '../../shared/ui/icon';
 
 /**
  * Um dos seis slots. Vazio é um botão tracejado; preenchido traz remover,
- * mover (alternativa de teclado ao arrastar) e link para o detalhe.
+ * ver ataques, mover (alternativa de teclado ao arrastar) e link para o detalhe.
  */
 @Component({
   selector: 'app-team-slot',
@@ -70,6 +70,17 @@ import { Icon } from '../../shared/ui/icon';
             variant="ghost"
             size="icon-sm"
             type="button"
+            [attr.aria-label]="'Ver ataques de ' + member.displayName"
+            title="Ver ataques"
+            (click)="moves.emit()"
+          >
+            <app-icon name="zap" [size]="14" />
+          </button>
+          <button
+            appButton
+            variant="ghost"
+            size="icon-sm"
+            type="button"
             [disabled]="!canMoveBack()"
             [attr.aria-label]="'Mover ' + member.displayName + ' para o slot anterior'"
             (click)="moveBack.emit()"
@@ -111,6 +122,7 @@ export class TeamSlot {
 
   readonly pick = output<void>();
   readonly remove = output<void>();
+  readonly moves = output<void>();
   readonly moveBack = output<void>();
   readonly moveForward = output<void>();
 
