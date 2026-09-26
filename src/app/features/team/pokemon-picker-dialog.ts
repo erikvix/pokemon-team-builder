@@ -60,6 +60,31 @@ export interface PokemonPickerData {
           (keydown)="onKeydown($event)"
         />
       </div>
+      <!-- No mobile os tipos ficam recolhidos; no desktop estão sempre à vista. -->
+      <button
+        appButton
+        variant="outline"
+        size="icon"
+        type="button"
+        class="relative sm:hidden"
+        aria-controls="picker-tipos"
+        [attr.aria-expanded]="showTypes()"
+        [attr.aria-label]="
+          selectedTypes().length > 0
+            ? 'Filtrar por tipo (' + selectedTypes().length + ' marcados)'
+            : 'Filtrar por tipo'
+        "
+        (click)="showTypes.set(!showTypes())"
+      >
+        <app-icon name="filter" [size]="16" />
+        @if (selectedTypes().length > 0) {
+          <span
+            class="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-primary font-mono text-[10px] text-primary-foreground"
+            aria-hidden="true"
+            >{{ selectedTypes().length }}</span
+          >
+        }
+      </button>
       <button
         appButton
         variant="ghost"
@@ -72,7 +97,11 @@ export interface PokemonPickerData {
       </button>
     </header>
 
-    <fieldset class="flex shrink-0 flex-wrap items-center gap-1 border-b border-border p-2">
+    <fieldset
+      id="picker-tipos"
+      class="shrink-0 flex-wrap items-center gap-1 border-b border-border p-2"
+      [class]="showTypes() ? 'flex' : 'hidden sm:flex'"
+    >
       <legend class="sr-only">
         Filtrar por tipo (mostra quem tem qualquer um dos tipos marcados)
       </legend>
@@ -174,6 +203,8 @@ export class PokemonPickerDialog {
   );
   protected readonly typeLabel = TYPE_LABEL;
   protected readonly selectedTypes = signal<readonly PokemonType[]>([]);
+  /** Só vale no mobile — acima de `sm` os tipos aparecem sempre. */
+  protected readonly showTypes = signal(false);
 
   protected readonly results = computed(() =>
     filterPokemon(this.all, {
