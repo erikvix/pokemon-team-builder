@@ -2,6 +2,12 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { debounceTime } from 'rxjs';
+import {
+  POKEMON_TYPES,
+  TYPE_LABEL,
+  typeColorVar,
+  type PokemonType,
+} from '../../core/data/pokemon-types';
 import { pokedexNumber } from '../../core/data/sprites';
 import { filterPokemon } from '../../core/services/pokemon-filter';
 import { PokemonService } from '../../core/services/pokemon.service';
@@ -17,7 +23,10 @@ export interface PokemonPickerData {
   readonly slotNumber: number;
 }
 
-/** Busca rápida para preencher um slot. Fecha devolvendo o id escolhido. */
+/**
+ * Busca para preencher um slot: por nome/número e por tipo, com todos os
+ * resultados na lista. Fecha devolvendo o id escolhido.
+ */
 @Component({
   selector: 'app-pokemon-picker-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -30,7 +39,7 @@ export interface PokemonPickerData {
     '[attr.aria-label]': '"Escolher Pokémon para o slot " + data.slotNumber',
   },
   template: `
-    <header class="flex items-center gap-2 border-b border-border p-3">
+    <header class="flex shrink-0 items-center gap-2 border-b border-border p-3">
       <div class="relative flex-1">
         <app-icon
           name="search"
@@ -63,11 +72,51 @@ export interface PokemonPickerData {
       </button>
     </header>
 
-    <p class="sr-only" aria-live="polite">{{ results().length }} resultados</p>
+    <fieldset class="flex shrink-0 flex-wrap items-center gap-1 border-b border-border p-2">
+      <legend class="sr-only">
+        Filtrar por tipo (mostra quem tem qualquer um dos tipos marcados)
+      </legend>
+      @for (type of availableTypes; track type) {
+        <button
+          type="button"
+          class="inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium transition-colors duration-150 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+          [class]="
+            isTypeSelected(type)
+              ? 'border-foreground/40 bg-accent text-accent-foreground'
+              : 'border-border text-muted-foreground'
+          "
+          [attr.aria-pressed]="isTypeSelected(type)"
+          (click)="toggleType(type)"
+        >
+          <span
+            class="size-2 shrink-0 rounded-full"
+            [style.background-color]="typeColor(type)"
+            aria-hidden="true"
+          ></span>
+          {{ typeLabel[type] }}
+        </button>
+      }
+      @if (selectedTypes().length > 0) {
+        <button
+          appButton
+          variant="ghost"
+          size="sm"
+          type="button"
+          class="h-6 px-2 text-[11px]"
+          (click)="selectedTypes.set([])"
+        >
+          Limpar tipos
+        </button>
+      }
+    </fieldset>
+
+    <p class="shrink-0 px-3 pt-2 text-[11px] text-muted-foreground" aria-live="polite">
+      {{ results().length }} Pokémon
+    </p>
 
     @if (results().length === 0) {
       <p class="p-8 text-center text-sm text-muted-foreground">
-        Nenhum Pokémon encontrado para “{{ queryInput() }}”.
+        Nenhum Pokémon encontrado com esses filtros.
       </p>
     } @else {
       <ul class="flex-1 overflow-y-auto p-1.5">
@@ -119,12 +168,37 @@ export class PokemonPickerDialog {
 
   private readonly all = this.pokemon.listAllSync();
 
+  /** Só os tipos que algum dos 151 tem — sem chip que não traz resultado. */
+  protected readonly availableTypes: readonly PokemonType[] = POKEMON_TYPES.filter((type) =>
+    this.all.some((pokemon) => pokemon.types.includes(type)),
+  );
+  protected readonly typeLabel = TYPE_LABEL;
+  protected readonly selectedTypes = signal<readonly PokemonType[]>([]);
+
   protected readonly results = computed(() =>
-    filterPokemon(this.all, { query: this.query(), types: [], sort: 'number' }).slice(0, 60),
+    filterPokemon(this.all, {
+      query: this.query(),
+      types: this.selectedTypes(),
+      sort: 'number',
+    }),
   );
 
   protected number(id: number): string {
     return pokedexNumber(id);
+  }
+
+  protected typeColor(type: PokemonType): string {
+    return typeColorVar(type);
+  }
+
+  protected isTypeSelected(type: PokemonType): boolean {
+    return this.selectedTypes().includes(type);
+  }
+
+  protected toggleType(type: PokemonType): void {
+    this.selectedTypes.update((types) =>
+      types.includes(type) ? types.filter((current) => current !== type) : [...types, type],
+    );
   }
 
   protected isInTeam(id: number): boolean {
