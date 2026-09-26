@@ -23,6 +23,7 @@ Regerar o índice da Pokédex a partir da PokeAPI (só quando precisar):
 
 ```bash
 npm run generate:pokedex
+npm run generate:moves     # ataques de FireRed/LeafGreen
 ```
 
 ## Stack
@@ -57,6 +58,7 @@ src/app/
     not-found/       404
 public/games/       logos dos jogos em SVG
 scripts/generate-pokedex.mjs
+scripts/generate-moves.mjs
 scripts/vectorize-logo.py
 ```
 
@@ -67,7 +69,7 @@ scripts/vectorize-logo.py
 | `/`            | Escolha do jogo — hoje só FireRed/LeafGreen; leva para `/team` |
 | `/pokedex`     | Grid dos 151, busca com debounce, filtro por tipo, ordenação   |
 | `/pokemon/:id` | Artwork, ficha, base stats, eficácia de tipos, linha evolutiva |
-| `/team`        | 6 slots com drag-and-drop e a análise completa do time         |
+| `/team`        | 6 slots com drag-and-drop, análise do time e modal de ataques  |
 | `*`            | 404 com visual próprio                                         |
 
 ## Decisões de UI
