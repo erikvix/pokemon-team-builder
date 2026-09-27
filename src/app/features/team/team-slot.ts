@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { pokedexNumber } from '../../core/data/sprites';
 import type { PokemonSummary } from '../../core/models/pokemon.model';
 import { TypeBadge } from '../../shared/components/type-badge';
@@ -9,12 +8,13 @@ import { Icon } from '../../shared/ui/icon';
 
 /**
  * Um dos seis slots. Vazio é um botão tracejado; preenchido traz remover,
- * ver ataques, mover (alternativa de teclado ao arrastar) e link para o detalhe.
+ * ver ataques, mover (alternativa de teclado ao arrastar) e, clicando no
+ * Pokémon, a ficha com stats, evolução e onde encontrar.
  */
 @Component({
   selector: 'app-team-slot',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, TypeBadge, ButtonDirective, CardDirective, Icon],
+  imports: [TypeBadge, ButtonDirective, CardDirective, Icon],
   template: `
     @if (pokemon(); as member) {
       <article
@@ -41,22 +41,27 @@ import { Icon } from '../../shared/ui/icon';
           <app-icon name="x" [size]="14" />
         </button>
 
-        <span class="grid size-16 shrink-0 place-items-center overflow-hidden">
-          <img
-            [src]="member.spriteUrl"
-            [alt]="'Sprite de ' + member.displayName"
-            width="80"
-            height="80"
-            loading="lazy"
-            decoding="async"
-            class="size-16 object-contain text-[10px] text-muted-foreground [image-rendering:pixelated]"
-          />
-        </span>
+        <button
+          type="button"
+          class="flex flex-col items-center gap-1.5 rounded-md p-1 transition-colors duration-150 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+          [attr.aria-label]="'Ver ficha de ' + member.displayName"
+          (click)="info.emit()"
+        >
+          <span class="grid size-16 shrink-0 place-items-center overflow-hidden">
+            <img
+              [src]="member.spriteUrl"
+              [alt]="'Sprite de ' + member.displayName"
+              width="80"
+              height="80"
+              loading="lazy"
+              decoding="async"
+              class="size-16 object-contain text-[10px] text-muted-foreground [image-rendering:pixelated]"
+            />
+          </span>
 
-        <a [routerLink]="['/pokemon', member.id]" class="rounded-sm text-sm font-semibold">
-          {{ member.displayName }}
-        </a>
-        <span class="font-mono text-[11px] text-muted-foreground">{{ number() }}</span>
+          <span class="text-sm font-semibold">{{ member.displayName }}</span>
+          <span class="font-mono text-[11px] text-muted-foreground">{{ number() }}</span>
+        </button>
 
         <div class="flex flex-wrap justify-center gap-1">
           @for (type of member.types; track type) {
@@ -123,6 +128,7 @@ export class TeamSlot {
   readonly pick = output<void>();
   readonly remove = output<void>();
   readonly moves = output<void>();
+  readonly info = output<void>();
   readonly moveBack = output<void>();
   readonly moveForward = output<void>();
 

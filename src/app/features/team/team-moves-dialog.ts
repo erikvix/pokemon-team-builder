@@ -13,7 +13,7 @@ import { TypeBadge } from '../../shared/components/type-badge';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { Icon } from '../../shared/ui/icon';
 import { Skeleton } from '../../shared/ui/skeleton';
-import { cn } from '../../shared/ui/cn';
+import { TeamMemberTabs } from './team-member-tabs';
 
 export interface TeamMovesData {
   readonly members: readonly PokemonSummary[];
@@ -38,7 +38,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
 @Component({
   selector: 'app-team-moves-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonDirective, Icon, Skeleton, TypeBadge],
+  imports: [ButtonDirective, Icon, Skeleton, TeamMemberTabs, TypeBadge],
   host: {
     class:
       'flex max-h-[85vh] w-[min(46rem,94vw)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
@@ -64,32 +64,11 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
       </button>
     </header>
 
-    <!-- Membros -->
-    <div
-      class="flex shrink-0 gap-1 overflow-x-auto border-b border-border p-2"
-      role="tablist"
-      aria-label="Membro do time"
-    >
-      @for (member of data.members; track member.id) {
-        <button
-          type="button"
-          role="tab"
-          [attr.aria-selected]="member.id === selected().id"
-          [class]="memberTabClass(member.id === selected().id)"
-          (click)="select(member)"
-        >
-          <img
-            [src]="member.spriteUrl"
-            alt=""
-            width="40"
-            height="40"
-            decoding="async"
-            class="size-10 shrink-0 [image-rendering:pixelated]"
-          />
-          <span class="text-xs font-medium">{{ member.displayName }}</span>
-        </button>
-      }
-    </div>
+    <app-team-member-tabs
+      [members]="data.members"
+      [selectedId]="selected().id"
+      (selectedChange)="select($event)"
+    />
 
     <!-- Forma de aprender -->
     <div
@@ -251,13 +230,6 @@ export class TeamMovesDialog {
     () => METHODS.find((item) => item.key === this.method())?.label ?? '',
   );
   protected readonly number = computed(() => pokedexNumber(this.selected().id));
-
-  protected memberTabClass(active: boolean): string {
-    return cn(
-      'flex shrink-0 flex-col items-center gap-0.5 rounded-md px-2 py-1 transition-colors duration-150 hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]',
-      active && 'bg-accent ring-1 ring-border',
-    );
-  }
 
   protected select(member: PokemonSummary): void {
     this.selected.set(member);

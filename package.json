@@ -10,7 +10,8 @@
     "test:watch": "ng test",
     "format": "prettier --write .",
     "generate:pokedex": "node scripts/generate-pokedex.mjs",
-    "generate:moves": "node scripts/generate-moves.mjs"
+    "generate:moves": "node scripts/generate-moves.mjs",
+    "generate:encounters": "node scripts/generate-encounters.mjs"
   },
   "private": true,
   "packageManager": "npm@11.12.1",

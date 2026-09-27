@@ -116,3 +116,32 @@ export interface PokemonMove {
 
 /** Tudo o que o Pokémon aprende no jogo, agrupado por forma de aprender. */
 export type PokemonMoveset = Readonly<Record<MoveLearnMethod, readonly PokemonMove[]>>;
+
+/** Formas de encontro em FireRed/LeafGreen. */
+export type EncounterMethod =
+  | 'walk'
+  | 'old-rod'
+  | 'good-rod'
+  | 'super-rod'
+  | 'surf'
+  | 'rock-smash'
+  | 'gift'
+  | 'gift-egg'
+  | 'static'
+  | 'pokeflute'
+  | 'npc-trade'
+  | 'roaming-grass';
+
+/** Em qual versão o encontro existe — `both` quando nas duas. */
+export type GameVersions = 'both' | 'firered' | 'leafgreen';
+
+/** Um lugar onde o Pokémon aparece no jogo. */
+export interface PokemonEncounter {
+  readonly area: string;
+  readonly method: EncounterMethod;
+  readonly minLevel: number;
+  readonly maxLevel: number;
+  /** Chance de aparecer com esse método na área, em %. */
+  readonly chance: number;
+  readonly versions: GameVersions;
+}

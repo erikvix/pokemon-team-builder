@@ -49,3 +49,34 @@ describe('PokemonService.getMoves', () => {
     );
   });
 });
+
+describe('PokemonService.getEncounters', () => {
+  it('traz os locais do Pikachu em FireRed/LeafGreen', async () => {
+    const encounters = await firstValueFrom(makeService().getEncounters(25));
+    expect(encounters.some((row) => row.area === 'Viridian Forest' && row.method === 'walk')).toBe(
+      true,
+    );
+    expect(encounters.every((row) => row.minLevel <= row.maxLevel)).toBe(true);
+  });
+
+  it('marca exclusivos de versão (Ekans só em FireRed)', async () => {
+    const encounters = await firstValueFrom(makeService().getEncounters(23));
+    expect(encounters.length).toBeGreaterThan(0);
+    expect(encounters.every((row) => row.versions === 'firered')).toBe(true);
+  });
+
+  it('inclui presentes e encontros fixos, e fica vazio para quem só evolui', async () => {
+    const service = makeService();
+    const eevee = await firstValueFrom(service.getEncounters(133));
+    expect(eevee.map((row) => row.method)).toContain('gift');
+    const mewtwo = await firstValueFrom(service.getEncounters(150));
+    expect(mewtwo.map((row) => row.method)).toContain('static');
+    expect(await firstValueFrom(service.getEncounters(3))).toEqual([]);
+  });
+
+  it('falha com erro de domínio para ids fora da geração 1', async () => {
+    await expect(firstValueFrom(makeService().getEncounters(999))).rejects.toBeInstanceOf(
+      PokemonDataError,
+    );
+  });
+});

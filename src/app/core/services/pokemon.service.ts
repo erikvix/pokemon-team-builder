@@ -3,8 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import {
   Observable,
   catchError,
+  defer,
   forkJoin,
-  from,
   map,
   of,
   shareReplay,
@@ -27,6 +27,7 @@ import {
   type MoveLearnMethod,
   type PokemonAbility,
   type PokemonDetail,
+  type PokemonEncounter,
   type PokemonMove,
   type PokemonMoveset,
   type PokemonSummary,
@@ -67,9 +68,16 @@ export class PokemonService {
   private readonly http = inject(HttpClient);
   private readonly detailCache = new Map<number, Observable<PokemonDetail>>();
   /** Índice de golpes (~160 kB): só baixa quando alguém abre os ataques. */
-  private readonly movesData$ = from(import('../data/frlg-moves')).pipe(
+  private readonly movesData$ = defer(() => import('../data/frlg-moves')).pipe(
     catchError((error: unknown) =>
       throwError(() => new PokemonDataError('Não foi possível carregar os ataques.', error)),
+    ),
+    shareReplay({ bufferSize: 1, refCount: false }),
+  );
+  /** Índice de locais (~130 kB): mesmo esquema, sob demanda. */
+  private readonly encountersData$ = defer(() => import('../data/frlg-encounters')).pipe(
+    catchError((error: unknown) =>
+      throwError(() => new PokemonDataError('Não foi possível carregar onde encontrar.', error)),
     ),
     shareReplay({ bufferSize: 1, refCount: false }),
   );
@@ -166,6 +174,22 @@ export class PokemonService {
           throw new PokemonDataError(`Não encontramos os ataques do Pokémon #${id}.`);
         }
         return toMoveset(learnset, FRLG_MOVES);
+      }),
+    );
+  }
+
+  /**
+   * Onde o Pokémon aparece em FireRed/LeafGreen, do menor nível para o maior.
+   * Lista vazia quando ele só vem por evolução, troca ou evento.
+   */
+  getEncounters(id: number): Observable<readonly PokemonEncounter[]> {
+    return this.encountersData$.pipe(
+      map(({ FRLG_ENCOUNTERS }) => {
+        const encounters = FRLG_ENCOUNTERS[id];
+        if (!encounters) {
+          throw new PokemonDataError(`Não encontramos os locais do Pokémon #${id}.`);
+        }
+        return encounters;
       }),
     );
   }

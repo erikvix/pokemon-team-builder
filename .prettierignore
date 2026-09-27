@@ -2,3 +2,4 @@ src/app/core/data/gen1-pokedex.ts
 src/app/core/data/frlg-moves.ts
 .angular/
 dist/
+src/app/core/data/frlg-encounters.ts

@@ -127,6 +127,7 @@
               [canMoveForward]="i < team.size() - 1"
               (remove)="remove(member.id)"
               (moves)="openMoves(member.id)"
+              (info)="openInfo(member.id)"
               (moveBack)="team.move(i, i - 1)"
               (moveForward)="team.move(i, i + 1)"
             />

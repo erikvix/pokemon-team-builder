@@ -16,6 +16,7 @@ import { CardDirective } from '../../shared/ui/card.directive';
 import { Icon } from '../../shared/ui/icon';
 import { PokemonPickerDialog, type PokemonPickerData } from './pokemon-picker-dialog';
 import { TeamAnalysisPanel } from './team-analysis-panel';
+import { TeamInfoDialog, type TeamInfoData } from './team-info-dialog';
 import { TeamMovesDialog, type TeamMovesData } from './team-moves-dialog';
 import { TeamSlot } from './team-slot';
 
@@ -98,6 +99,17 @@ export class TeamPage {
     }
     const data: TeamMovesData = { members, initialId: id ?? first.id };
     this.dialog.open(TeamMovesDialog, {
+      data,
+      autoFocus: 'first-tabbable',
+      restoreFocus: true,
+      panelClass: 'outline-none',
+    });
+  }
+
+  /** Ficha do membro clicado, com abas para os outros do time. */
+  protected openInfo(id: number): void {
+    const data: TeamInfoData = { members: this.team.members(), initialId: id };
+    this.dialog.open(TeamInfoDialog, {
       data,
       autoFocus: 'first-tabbable',
       restoreFocus: true,
