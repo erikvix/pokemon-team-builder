@@ -84,4 +84,12 @@ describe('filterPokemon', () => {
   it('devolve vazio quando nada casa', () => {
     expect(filterPokemon(LIST, { query: 'ditto', types: [], sort: 'number' })).toEqual([]);
   });
+
+  it('ordem do jogo mantém a ordem recebida; número ordena pelo id', () => {
+    const reversed = [...LIST].reverse();
+    expect(filterPokemon(reversed, { query: '', types: [], sort: 'game' })).toEqual(reversed);
+    expect(
+      filterPokemon(reversed, { query: '', types: [], sort: 'number' }).map((p) => p.id),
+    ).toEqual([...LIST].map((p) => p.id).sort((a, b) => a - b));
+  });
 });

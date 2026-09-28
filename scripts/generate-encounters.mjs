@@ -6,8 +6,9 @@
  * (horário do dia, rádio, swarm…). Ao vivo seriam uma requisição por Pokémon
  * mais uma por área para traduzir o nome; gerado uma vez, o modal abre na hora.
  *
- * Para jogos com `ids: 'available'` (HGSS) também escreve
- * `<jogo>-available.ts`: quem aparece no jogo, mais quem se consegue a partir
+ * Também escreve `<jogo>-available.ts`: os Pokémon do jogo na ordem da
+ * história (`scripts/progression.mjs`). Para jogos com `ids: 'available'`
+ * (HGSS) a lista é de quem aparece no jogo, mais quem se consegue a partir
  * deles evoluindo ou reproduzindo.
  *
  * Uso: node scripts/generate-encounters.mjs <frlg|hgss>
@@ -23,9 +24,12 @@ import {
   range,
   str,
 } from './lib.mjs';
+import { PROGRESSION } from './progression.mjs';
 
 const game = gameFromArgs();
+const progression = PROGRESSION[game.key];
 const VERSIONS = new Set(game.versions);
+const unknownAreas = new Set();
 
 /**
  * Formas de encontro que existem nos jogos. Ficam de fora as de eventos e
@@ -214,13 +218,9 @@ function collapseTimes(rows) {
     );
 }
 
-/**
- * Obtíveis no jogo: quem aparece em algum lugar, mais evoluções (menos as que
- * pedem um local de outra região, como Leafeon) e pré-evoluções (reprodução),
- * até não entrar mais ninguém. Quem está em `unobtainable` nunca entra.
- */
-async function availableFrom(encounteredIds) {
-  const species = await mapWithConcurrency(range(1, LAST_NATIONAL_ID), (id) =>
+/** Espécies e cadeias evolutivas até o último id considerado, com as arestas pai → filho. */
+async function loadEvolution(lastId) {
+  const species = await mapWithConcurrency(range(1, lastId), (id) =>
     getJson(`${API}/pokemon-species/${id}`),
   );
   const chainUrls = [...new Set(species.map((item) => item.evolution_chain?.url).filter(Boolean))];
@@ -242,6 +242,32 @@ async function availableFrom(encounteredIds) {
   };
   chains.forEach((chain) => walk(chain.chain));
 
+  const legendary = new Set(
+    species.filter((item) => item.is_legendary || item.is_mythical).map((item) => item.id),
+  );
+  /** Id da forma base da família de cada espécie. */
+  const root = new Map();
+  for (const item of species) {
+    const chain = chains.find((c) => c.id === idFromUrl(item.evolution_chain?.url ?? ''));
+    root.set(item.id, chain ? idFromUrl(chain.chain.species.url) : item.id);
+  }
+  /** Profundidade na linha evolutiva (0 = base). */
+  const depth = new Map();
+  const setDepth = (link, level) => {
+    depth.set(idFromUrl(link.species.url), level);
+    link.evolves_to.forEach((next) => setDepth(next, level + 1));
+  };
+  chains.forEach((chain) => setDepth(chain.chain, 0));
+
+  return { edges, legendary, root, depth };
+}
+
+/**
+ * Obtíveis no jogo: quem aparece em algum lugar, mais evoluções (menos as que
+ * pedem um local de outra região, como Leafeon) e pré-evoluções (reprodução),
+ * até não entrar mais ninguém. Quem está em `unobtainable` nunca entra.
+ */
+function availableFrom(encounteredIds, edges) {
   const blocked = new Set(Object.keys(game.unobtainable ?? {}).map(Number));
   const available = new Set(encounteredIds.filter((id) => !blocked.has(id)));
   let grew = true;
@@ -263,28 +289,106 @@ async function availableFrom(encounteredIds) {
   return [...available].sort((a, b) => a - b);
 }
 
+/** Índice da área na história — o prefixo mais longo que casar. */
+function areaStep(area) {
+  let best = -1;
+  let bestLength = -1;
+  progression.areas.forEach((prefix, index) => {
+    const matches =
+      area === prefix || (area.startsWith(prefix) && /[\s;(]/.test(area[prefix.length]));
+    if (matches && prefix.length > bestLength) {
+      best = index;
+      bestLength = prefix.length;
+    }
+  });
+  if (best === -1) unknownAreas.add(area);
+  return best === -1 ? progression.areas.length : best;
+}
+
+function stepOf(areaPrefix) {
+  const index = progression.areas.indexOf(areaPrefix);
+  if (index === -1) throw new Error(`Área de progressão desconhecida: ${areaPrefix}`);
+  return index;
+}
+
+/** Quando dá para fazer esse encontro: o mais tardio entre área, método e condições. */
+function rowStep(row) {
+  const needs = [areaStep(row.area)];
+  const method = progression.methods[row.method];
+  if (method) needs.push(stepOf(method));
+  for (const condition of row.conditions) {
+    const unlock = progression.conditions[condition];
+    if (unlock) needs.push(stepOf(unlock));
+  }
+  return Math.max(...needs);
+}
+
+/**
+ * Ordem de jogo: iniciais, depois cada família no ponto da história em que o
+ * primeiro membro fica disponível (a família vem junta, da base para a
+ * evolução final), e os lendários por último, também na ordem em que aparecem.
+ */
+function storyOrder(ids, evolution) {
+  const never = progression.areas.length + 1;
+  const own = new Map(ids.map((id) => [id, Math.min(never, ...(byId.get(id) ?? []).map(rowStep))]));
+  const familyStep = new Map();
+  for (const id of ids) {
+    const family = evolution.root.get(id) ?? id;
+    familyStep.set(family, Math.min(familyStep.get(family) ?? never, own.get(id)));
+  }
+  const starters = new Set(progression.starters.map((id) => evolution.root.get(id) ?? id));
+  const key = (id) => {
+    const family = evolution.root.get(id) ?? id;
+    const legendary = evolution.legendary.has(id);
+    const group = starters.has(family) ? 0 : legendary ? 2 : 1;
+    const step = legendary ? own.get(id) : familyStep.get(family);
+    const starterIndex = starters.has(family) ? progression.starters.indexOf(family) : 0;
+    return [group, step, starterIndex, family, evolution.depth.get(id) ?? 0, id];
+  };
+  return [...ids].sort((a, b) => {
+    const ka = key(a);
+    const kb = key(b);
+    for (let i = 0; i < ka.length; i++) {
+      if (ka[i] !== kb[i]) return ka[i] - kb[i];
+    }
+    return 0;
+  });
+}
+
 const candidates =
   game.ids === 'available' ? range(1, LAST_NATIONAL_ID) : range(game.ids.from, game.ids.to);
 const entries = await mapWithConcurrency(candidates, fetchEncounters);
 const byId = new Map(entries.map((entry) => [entry.id, entry.rows]));
 
-let ids = candidates;
-if (game.ids === 'available') {
-  ids = await availableFrom(entries.filter(({ rows }) => rows.length > 0).map(({ id }) => id));
-  const availableFile = `${game.key}-available.ts`;
-  await writeFile(
-    new URL(`../src/app/core/data/${availableFile}`, import.meta.url),
-    `// ARQUIVO GERADO — não edite à mão.
+const evolution = await loadEvolution(Math.max(...candidates));
+const ids =
+  game.ids === 'available'
+    ? availableFrom(
+        entries.filter(({ rows }) => rows.length > 0).map(({ id }) => id),
+        evolution.edges,
+      )
+    : candidates;
+
+const ordered = storyOrder(ids, evolution);
+const availableFile = `${game.key}-available.ts`;
+await writeFile(
+  new URL(`../src/app/core/data/${availableFile}`, import.meta.url),
+  `// ARQUIVO GERADO — não edite à mão.
 // Rode \`node scripts/generate-encounters.mjs ${game.key}\` para regerar a partir da PokeAPI.
 
-/** Pokémon obtíveis no jogo: encontrados, evoluídos ou reproduzidos a partir deles. */
+/**
+ * Pokémon obtíveis no jogo, na ordem da história: iniciais, depois cada
+ * família no ponto em que aparece pela primeira vez, e os lendários no fim.
+ */
 export const AVAILABLE_IDS: readonly number[] = [
-${ids.join(', ')},
+${ordered.join(', ')},
 ];
 `,
-    'utf8',
-  );
-  console.log(`${availableFile} gerado com ${ids.length} Pokémon.`);
+  'utf8',
+);
+console.log(`${availableFile} gerado com ${ordered.length} Pokémon, na ordem da história.`);
+if (unknownAreas.size > 0) {
+  console.log(`Áreas fora da progressão (vão para o fim): ${[...unknownAreas].join(' | ')}`);
 }
 
 const body = ids

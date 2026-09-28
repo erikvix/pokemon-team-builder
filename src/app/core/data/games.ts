@@ -1,4 +1,5 @@
 import type { VersionId } from '../models/pokemon.model';
+import { AVAILABLE_IDS as FRLG_AVAILABLE_IDS } from './frlg-available';
 import { AVAILABLE_IDS as HGSS_AVAILABLE_IDS } from './hgss-available';
 import type { PokemonType } from './pokemon-types';
 
@@ -33,7 +34,10 @@ export interface Game {
   /** Tipos que dão o acento visual do card. */
   readonly accentTypes: readonly PokemonType[];
   readonly summary: string;
-  /** Pokémon do jogo, em ordem de Pokédex nacional. */
+  /**
+   * Pokémon do jogo na ordem da história (iniciais, rotas na ordem em que se
+   * chega, lendários no fim) — gerada por `scripts/generate-encounters.mjs`.
+   */
   readonly pokemonIds: readonly number[];
 }
 
@@ -53,7 +57,7 @@ export const GAMES: readonly Game[] = [
     artworkIds: [],
     accentTypes: ['fire', 'grass'],
     summary: 'Os 151 originais de Kanto, de Bulbasaur a Mew.',
-    pokemonIds: Array.from({ length: 151 }, (_, index) => index + 1),
+    pokemonIds: FRLG_AVAILABLE_IDS,
   },
   {
     id: 'heartgold-soulsilver',

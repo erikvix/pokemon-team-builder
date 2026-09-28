@@ -68,7 +68,7 @@ export class PokedexPage {
   });
 
   protected readonly selectedTypes = signal<readonly PokemonType[]>([]);
-  protected readonly sort = signal<SortKey>('number');
+  protected readonly sort = signal<SortKey>('game');
   protected readonly showTypeFilter = signal(false);
   protected readonly limit = signal(PAGE_SIZE);
 

@@ -98,6 +98,22 @@ describe('PokemonService por jogo', () => {
     expect(hgss.some((pokemon) => pokemon.id === 470)).toBe(false);
   });
 
+  it('lista na ordem da história: iniciais, rotas e lendários no fim', () => {
+    const names = (game: typeof FRLG | typeof HGSS) =>
+      makeService()
+        .listSync(game)
+        .map((pokemon) => pokemon.name);
+    const hgss = names(HGSS);
+    expect(hgss.slice(0, 4)).toEqual(['chikorita', 'bayleef', 'meganium', 'cyndaquil']);
+    // Pidgey e Hoothoot (Route 29) vêm muito antes de quem só aparece em Kanto.
+    expect(hgss.indexOf('hoothoot')).toBeLessThan(hgss.indexOf('bulbasaur'));
+    expect(hgss.slice(-2)).toEqual(['kyogre', 'groudon']);
+    const frlg = names(FRLG);
+    expect(frlg.slice(0, 3)).toEqual(['bulbasaur', 'ivysaur', 'venusaur']);
+    expect(frlg.indexOf('pidgey')).toBeLessThan(frlg.indexOf('onix'));
+    expect(frlg.at(-1)).toBe('mew');
+  });
+
   it('deixa fora de HGSS quem só vem por troca ou evento', () => {
     const hgss = new Set(
       makeService()

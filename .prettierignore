@@ -6,3 +6,4 @@ src/app/core/data/national-pokedex.ts
 src/app/core/data/hgss-moves.ts
 src/app/core/data/hgss-encounters.ts
 src/app/core/data/hgss-available.ts
+src/app/core/data/frlg-available.ts

@@ -211,7 +211,8 @@ export class PokemonPickerDialog {
     filterPokemon(this.all, {
       query: this.query(),
       types: this.selectedTypes(),
-      sort: 'number',
+      // Ordem da história: iniciais, rotas na ordem em que se chega, lendários no fim.
+      sort: 'game',
     }),
   );
 

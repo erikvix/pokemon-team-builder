@@ -64,6 +64,7 @@ scripts/generate-pokedex.mjs
 scripts/generate-moves.mjs
 scripts/generate-encounters.mjs
 scripts/lib.mjs     configuração dos jogos para os geradores
+scripts/progression.mjs  ordem da história de cada jogo (locais e quando cada método libera)
 scripts/vectorize-logo.py
 ```
 
@@ -103,6 +104,14 @@ o jogador espera hoje. Ela está isolada em `core/data/type-chart.ts` com as
 funções de cálculo puras e testadas — trocar pela tabela legada é mexer em um
 arquivo só. Pelo mesmo motivo, os tipos dos Pokémon são os atuais nos dois jogos
 (Clefairy aparece como Fada, Magnemite como Elétrico/Aço).
+
+**Ordem do jogo.** A busca do slot e a Pokédex listam na ordem em que o
+jogador encontra os Pokémon: iniciais, depois cada família no primeiro ponto da
+história em que um membro aparece, e os lendários no fim. A PokeAPI não tem
+essa ordem, então `scripts/progression.mjs` lista os locais de cada jogo na
+ordem da história e a partir de onde cada forma de encontro libera (Super Rod
+na Route 12, rádio e swarms no pós-jogo de HGSS…). As ordenações por número,
+nome e stats continuam no seletor da Pokédex.
 
 **Cor nunca sozinha.** As cores canônicas de tipo aparecem como ponto e fundo
 tênue; o texto usa `--foreground` para garantir contraste AA nos dois temas. Na

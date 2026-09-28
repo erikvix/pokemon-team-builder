@@ -1,10 +1,11 @@
 import type { PokemonType } from '../data/pokemon-types';
 import type { PokemonSummary } from '../models/pokemon.model';
 
-export const SORT_KEYS = ['number', 'name', 'stats'] as const;
+export const SORT_KEYS = ['game', 'number', 'name', 'stats'] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 
 export const SORT_LABEL: Readonly<Record<SortKey, string>> = {
+  game: 'Ordem do jogo',
   number: 'Número',
   name: 'Nome',
   stats: 'Total de stats',
@@ -17,7 +18,7 @@ export interface PokemonFilter {
   readonly sort: SortKey;
 }
 
-export const EMPTY_FILTER: PokemonFilter = { query: '', types: [], sort: 'number' };
+export const EMPTY_FILTER: PokemonFilter = { query: '', types: [], sort: 'game' };
 
 /** Minúsculas e sem acento, para a busca não depender de digitação exata. */
 export function normalize(text: string): string {
@@ -43,7 +44,10 @@ export function matchesTypes(pokemon: PokemonSummary, types: readonly PokemonTyp
   return types.length === 0 || types.some((type) => pokemon.types.includes(type));
 }
 
-/** Aplica busca, filtro de tipo e ordenação. Não muta a lista recebida. */
+/**
+ * Aplica busca, filtro de tipo e ordenação. Não muta a lista recebida.
+ * `game` mantém a ordem recebida — a lista do jogo já vem na ordem da história.
+ */
 export function filterPokemon(
   list: readonly PokemonSummary[],
   filter: PokemonFilter,
@@ -57,6 +61,8 @@ export function filterPokemon(
       return [...result].sort((a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR'));
     case 'stats':
       return [...result].sort((a, b) => b.statTotal - a.statTotal || a.id - b.id);
+    case 'number':
+      return [...result].sort((a, b) => a.id - b.id);
     default:
       return result;
   }
