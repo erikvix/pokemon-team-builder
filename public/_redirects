@@ -1,0 +1,4 @@
+# SPA: qualquer rota (/team, /pokedex, /pokemon/25…) serve o index.html e o
+# roteador do Angular resolve no navegador. Sem isso, o F5 fora da raiz dá 404
+# no Netlify. Arquivos que existem (JS, CSS, imagens) continuam servidos antes.
+/*    /index.html   200
