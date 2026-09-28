@@ -11,12 +11,15 @@ import {
   switchMap,
   throwError,
 } from 'rxjs';
-import { GEN1_POKEDEX } from '../data/gen1-pokedex';
+import type { GameLearnset, GameMove } from '../data/game-data.model';
+import { findGame, type GameId } from '../data/games';
+import { NATIONAL_POKEDEX } from '../data/national-pokedex';
 import { isPokemonType, type PokemonType } from '../data/pokemon-types';
 import { artworkUrl, displayName, spriteUrl } from '../data/sprites';
 import type {
   PokeApiChainLink,
   PokeApiEvolutionChain,
+  PokeApiEvolutionDetail,
   PokeApiPokemon,
   PokeApiSpecies,
 } from '../models/pokeapi.model';
@@ -32,7 +35,6 @@ import {
   type PokemonMoveset,
   type PokemonSummary,
 } from '../models/pokemon.model';
-import type { FrlgLearnset, FrlgMove } from '../data/frlg-moves';
 
 const API_BASE = 'https://pokeapi.co/api/v2';
 
@@ -47,42 +49,81 @@ export class PokemonDataError extends Error {
   }
 }
 
+interface MovesModule {
+  readonly MOVES: Readonly<Record<string, GameMove>>;
+  readonly LEARNSETS: Readonly<Record<number, GameLearnset>>;
+}
+
+interface EncountersModule {
+  readonly ENCOUNTERS: Readonly<Record<number, readonly PokemonEncounter[]>>;
+}
+
+/**
+ * Índices gerados de cada jogo. Os `import()` ficam literais para o bundler
+ * separar um chunk por arquivo.
+ */
+const GAME_DATA: Readonly<
+  Record<GameId, { moves: () => Promise<MovesModule>; encounters: () => Promise<EncountersModule> }>
+> = {
+  'firered-leafgreen': {
+    moves: () => import('../data/frlg-moves'),
+    encounters: () => import('../data/frlg-encounters'),
+  },
+  'heartgold-soulsilver': {
+    moves: () => import('../data/hgss-moves'),
+    encounters: () => import('../data/hgss-encounters'),
+  },
+};
+
+/** `defer`: o chunk só baixa na primeira inscrição, e fica em cache depois. */
+function cachedImport<T>(
+  cache: Map<GameId, Observable<T>>,
+  gameId: GameId,
+  load: () => Promise<T>,
+  what: string,
+): Observable<T> {
+  let data = cache.get(gameId);
+  if (!data) {
+    data = defer(load).pipe(
+      catchError((error: unknown) => {
+        // Falhou (rede caiu no meio do download): a próxima tentativa refaz.
+        cache.delete(gameId);
+        return throwError(() => new PokemonDataError(`Não foi possível carregar ${what}.`, error));
+      }),
+      shareReplay({ bufferSize: 1, refCount: false }),
+    );
+    cache.set(gameId, data);
+  }
+  return data;
+}
+
 const ITEM_LABEL: Readonly<Record<string, string>> = {
   'fire-stone': 'Pedra do Fogo',
   'water-stone': 'Pedra da Água',
   'thunder-stone': 'Pedra do Trovão',
   'leaf-stone': 'Pedra da Folha',
   'moon-stone': 'Pedra da Lua',
+  'sun-stone': 'Pedra do Sol',
 };
 
 /**
  * Única porta de saída de dados do app.
  *
- * A listagem dos 151 vem de um índice versionado (`gen1-pokedex.ts`), gerado
- * a partir da PokeAPI — evita 151 requisições no primeiro load. O detalhe vem
- * da API ao vivo. Quando o backend Spring existir, basta trocar as URLs (ou a
+ * A listagem vem de um índice versionado (`national-pokedex.ts`, #001–#493),
+ * gerado a partir da PokeAPI — evita centenas de requisições no primeiro
+ * load; cada jogo enxerga só os seus Pokémon. Ataques e locais vêm de índices
+ * gerados por jogo, carregados sob demanda. O detalhe vem da API ao vivo. Quando o backend Spring existir, basta trocar as URLs (ou a
  * implementação inteira) aqui: nenhum componente conhece a PokeAPI.
  */
 @Injectable({ providedIn: 'root' })
 export class PokemonService {
   private readonly http = inject(HttpClient);
   private readonly detailCache = new Map<number, Observable<PokemonDetail>>();
-  /** Índice de golpes (~160 kB): só baixa quando alguém abre os ataques. */
-  private readonly movesData$ = defer(() => import('../data/frlg-moves')).pipe(
-    catchError((error: unknown) =>
-      throwError(() => new PokemonDataError('Não foi possível carregar os ataques.', error)),
-    ),
-    shareReplay({ bufferSize: 1, refCount: false }),
-  );
-  /** Índice de locais (~130 kB): mesmo esquema, sob demanda. */
-  private readonly encountersData$ = defer(() => import('../data/frlg-encounters')).pipe(
-    catchError((error: unknown) =>
-      throwError(() => new PokemonDataError('Não foi possível carregar onde encontrar.', error)),
-    ),
-    shareReplay({ bufferSize: 1, refCount: false }),
-  );
+  /** Índices por jogo, baixados só quando alguém abre ataques ou locais. */
+  private readonly movesData = new Map<GameId, Observable<MovesModule>>();
+  private readonly encountersData = new Map<GameId, Observable<EncountersModule>>();
 
-  private readonly summaries: readonly PokemonSummary[] = GEN1_POKEDEX.map((entry) => ({
+  private readonly summaries: readonly PokemonSummary[] = NATIONAL_POKEDEX.map((entry) => ({
     id: entry.id,
     name: entry.name,
     displayName: displayName(entry.name),
@@ -98,25 +139,25 @@ export class PokemonService {
   );
 
   /**
-   * Os 151 da geração 1, em ordem de Pokédex.
+   * Os Pokémon do jogo, em ordem de Pokédex nacional.
    *
    * Assíncrono de propósito: hoje resolve na hora (índice local), mas a
    * assinatura já é a que o backend Spring vai ter, então as telas tratam
    * carregando/erro desde agora.
    */
-  list(): Observable<readonly PokemonSummary[]> {
-    return of(this.summaries);
+  list(gameId: GameId): Observable<readonly PokemonSummary[]> {
+    return of(this.listSync(gameId));
   }
 
   /**
    * Acesso direto ao índice local, sem passar por `Observable`. Existe porque
    * o índice é local e síncrono; some junto com ele quando o backend entrar.
    */
-  listAllSync(): readonly PokemonSummary[] {
-    return this.summaries;
+  listSync(gameId: GameId): readonly PokemonSummary[] {
+    return this.getSummaries(findGame(gameId)?.pokemonIds ?? []);
   }
 
-  /** Busca pontual no índice local — usada para resolver ids do time. */
+  /** Busca pontual no índice nacional (#001–#493), sem filtrar por jogo. */
   getSummary(id: number): PokemonSummary | undefined {
     return this.byId.get(id);
   }
@@ -162,35 +203,47 @@ export class PokemonService {
   }
 
   /**
-   * Golpes que o Pokémon aprende em FireRed/LeafGreen, com poder, precisão e
-   * PP daqueles jogos. Vem de um índice gerado (`frlg-moves.ts`), carregado
-   * sob demanda.
+   * Golpes que o Pokémon aprende no jogo, com poder, precisão e PP daquele
+   * jogo. Vem de um índice gerado (`<jogo>-moves.ts`), carregado sob demanda.
    */
-  getMoves(id: number): Observable<PokemonMoveset> {
-    return this.movesData$.pipe(
-      map(({ FRLG_MOVES, FRLG_LEARNSETS }) => {
-        const learnset = FRLG_LEARNSETS[id];
+  getMoves(id: number, gameId: GameId): Observable<PokemonMoveset> {
+    return this.moves(gameId).pipe(
+      map(({ MOVES, LEARNSETS }) => {
+        const learnset = LEARNSETS[id];
         if (!learnset) {
-          throw new PokemonDataError(`Não encontramos os ataques do Pokémon #${id}.`);
+          throw new PokemonDataError(`Não encontramos os ataques do Pokémon #${id} nesse jogo.`);
         }
-        return toMoveset(learnset, FRLG_MOVES);
+        return toMoveset(learnset, MOVES);
       }),
     );
   }
 
   /**
-   * Onde o Pokémon aparece em FireRed/LeafGreen, do menor nível para o maior.
-   * Lista vazia quando ele só vem por evolução, troca ou evento.
+   * Onde o Pokémon aparece no jogo, do menor nível para o maior. Lista vazia
+   * quando ele só vem por evolução, reprodução, troca ou evento.
    */
-  getEncounters(id: number): Observable<readonly PokemonEncounter[]> {
-    return this.encountersData$.pipe(
-      map(({ FRLG_ENCOUNTERS }) => {
-        const encounters = FRLG_ENCOUNTERS[id];
+  getEncounters(id: number, gameId: GameId): Observable<readonly PokemonEncounter[]> {
+    return this.encounters(gameId).pipe(
+      map(({ ENCOUNTERS }) => {
+        const encounters = ENCOUNTERS[id];
         if (!encounters) {
-          throw new PokemonDataError(`Não encontramos os locais do Pokémon #${id}.`);
+          throw new PokemonDataError(`Não encontramos os locais do Pokémon #${id} nesse jogo.`);
         }
         return encounters;
       }),
+    );
+  }
+
+  private moves(gameId: GameId): Observable<MovesModule> {
+    return cachedImport(this.movesData, gameId, GAME_DATA[gameId].moves, 'os ataques');
+  }
+
+  private encounters(gameId: GameId): Observable<EncountersModule> {
+    return cachedImport(
+      this.encountersData,
+      gameId,
+      GAME_DATA[gameId].encounters,
+      'onde encontrar',
     );
   }
 
@@ -307,8 +360,8 @@ export class PokemonService {
 }
 
 function toMoveset(
-  learnset: FrlgLearnset,
-  moves: Readonly<Record<string, FrlgMove>>,
+  learnset: GameLearnset,
+  moves: Readonly<Record<string, GameMove>>,
 ): PokemonMoveset {
   const build = (name: string, level: number | null = null): PokemonMove[] => {
     const move = moves[name];
@@ -353,34 +406,38 @@ function idFromSpeciesUrl(url: string): number | null {
   return Number.isFinite(id) ? id : null;
 }
 
-function describeTrigger(
-  detail:
-    | {
-        min_level: number | null;
-        trigger: { name: string } | null;
-        item: { name: string } | null;
-        min_happiness: number | null;
-      }
-    | undefined,
-): string | null {
+function describeTrigger(detail: PokeApiEvolutionDetail | undefined): string | null {
   if (!detail) {
     return null;
   }
+  const time =
+    detail.time_of_day === 'day' ? ' (de dia)' : detail.time_of_day === 'night' ? ' (à noite)' : '';
+  const itemName = (item: { name: string }): string =>
+    ITEM_LABEL[item.name] ?? displayName(item.name);
+
   if (detail.min_level !== null) {
-    return `Nível ${detail.min_level}`;
+    return `Nível ${detail.min_level}${time}`;
   }
   if (detail.item) {
-    return ITEM_LABEL[detail.item.name] ?? displayName(detail.item.name);
+    return itemName(detail.item);
+  }
+  if (detail.trigger?.name === 'trade') {
+    return detail.held_item ? `Troca segurando ${itemName(detail.held_item)}` : 'Troca';
   }
   if (detail.min_happiness !== null) {
-    return 'Amizade alta';
+    return `Amizade alta${time}`;
   }
-  switch (detail.trigger?.name) {
-    case 'trade':
-      return 'Troca';
-    case 'level-up':
-      return 'Subir de nível';
-    default:
-      return null;
+  if (detail.held_item) {
+    return `Subir de nível segurando ${itemName(detail.held_item)}${time}`;
   }
+  if (detail.known_move) {
+    return `Subir de nível sabendo ${displayName(detail.known_move.name)}`;
+  }
+  if (detail.party_species) {
+    return `Subir de nível com ${displayName(detail.party_species.name)} no time`;
+  }
+  if (detail.min_beauty) {
+    return 'Beleza alta';
+  }
+  return detail.trigger?.name === 'level-up' ? 'Subir de nível' : null;
 }

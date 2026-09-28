@@ -1,32 +1,8 @@
 // ARQUIVO GERADO — não edite à mão.
-// Rode `node scripts/generate-moves.mjs` para regerar a partir da PokeAPI.
-import type { MoveCategory } from '../models/pokemon.model';
-import type { PokemonType } from './pokemon-types';
+// Rode `node scripts/generate-moves.mjs frlg` para regerar a partir da PokeAPI.
+import type { GameLearnset, GameMove } from './game-data.model';
 
-/** Dados do golpe como eram em FireRed/LeafGreen. */
-export interface FrlgMove {
-  /** `null` é o tipo "???" (só Curse, na geração 3). */
-  readonly type: PokemonType | null;
-  /** Na geração 3 a categoria vem do tipo do golpe. */
-  readonly category: MoveCategory;
-  readonly power: number | null;
-  readonly accuracy: number | null;
-  readonly pp: number | null;
-  /** `TM24`, `HM03` — quando o golpe é ensinado por máquina. */
-  readonly machine: string | null;
-  /** Texto do jogo (inglês — a PokeAPI não tem português). */
-  readonly description: string | null;
-}
-
-export interface FrlgLearnset {
-  /** `[nível, golpe]`, em ordem de nível. */
-  readonly levelUp: ReadonlyArray<readonly [number, string]>;
-  readonly machine: readonly string[];
-  readonly tutor: readonly string[];
-  readonly egg: readonly string[];
-}
-
-export const FRLG_MOVES: Readonly<Record<string, FrlgMove>> = {
+export const MOVES: Readonly<Record<string, GameMove>> = {
   'absorb': { type: 'grass', category: 'special', power: 20, accuracy: 100, pp: 20, machine: null, description: 'An attack that absorbs half the damage it inflicted to restore HP.' },
   'acid': { type: 'poison', category: 'physical', power: 40, accuracy: 100, pp: 30, machine: null, description: 'The foe is sprayed with a harsh, hide- melting acid that may lower DEFENSE.' },
   'acid-armor': { type: 'poison', category: 'status', power: null, accuracy: null, pp: 40, machine: null, description: 'The user alters its cells to liquefy itself and sharply raise DEFENSE.' },
@@ -351,7 +327,7 @@ export const FRLG_MOVES: Readonly<Record<string, FrlgMove>> = {
   'zap-cannon': { type: 'electric', category: 'special', power: 100, accuracy: 50, pp: 5, machine: null, description: 'An electric blast is fired like a cannon to inflict damage and paralyze.' },
 };
 
-export const FRLG_LEARNSETS: Readonly<Record<number, FrlgLearnset>> = {
+export const LEARNSETS: Readonly<Record<number, GameLearnset>> = {
   1: {
     levelUp: [[1, 'tackle'], [4, 'growl'], [7, 'leech-seed'], [10, 'vine-whip'], [15, 'poison-powder'], [15, 'sleep-powder'], [20, 'razor-leaf'], [25, 'sweet-scent'], [32, 'growth'], [39, 'synthesis'], [46, 'solar-beam']],
     machine: ['cut', 'strength', 'solar-beam', 'toxic', 'double-team', 'flash', 'rest', 'protect', 'sludge-bomb', 'giga-drain', 'attract', 'return', 'frustration', 'hidden-power', 'sunny-day', 'rock-smash', 'facade', 'secret-power', 'bullet-seed'],

@@ -60,12 +60,18 @@
         appButton
         [variant]="inTeam() ? 'outline' : 'default'"
         type="button"
-        [disabled]="!inTeam() && team.isFull()"
+        [disabled]="!inTeam() && (team.isFull() || !inGame())"
         (click)="toggleTeam()"
       >
         <app-icon [name]="inTeam() ? 'x' : 'plus'" [size]="16" />
         {{
-          inTeam() ? 'Remover do time' : team.isFull() ? 'Time cheio (6/6)' : 'Adicionar ao time'
+          inTeam()
+            ? 'Remover do time'
+            : !inGame()
+              ? 'Não existe em ' + game.current().shortTitle
+              : team.isFull()
+                ? 'Time cheio (6/6)'
+                : 'Adicionar ao time'
         }}
       </button>
     </header>

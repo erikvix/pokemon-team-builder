@@ -1,18 +1,16 @@
 /**
- * Gera `src/app/core/data/gen1-pokedex.ts` a partir da PokeAPI.
+ * Gera `src/app/core/data/national-pokedex.ts` a partir da PokeAPI.
  *
- * A listagem da Pokédex precisa de tipo e base stats dos 151 Pokémon. Buscar
- * isso ao vivo custaria 151 requisições de ~270 kB cada no primeiro load, então
+ * A listagem da Pokédex precisa de tipo e base stats de #001 a #493 (até a
+ * geração 4); cada jogo mostra só os seus. Buscar isso ao vivo custaria
+ * centenas de requisições de ~270 kB cada no primeiro load, então
  * o índice é gerado uma vez e versionado. Os dados de detalhe continuam vindo
  * da API em tempo real.
  *
  * Uso: node scripts/generate-pokedex.mjs
  */
 import { writeFile } from 'node:fs/promises';
-
-const API = 'https://pokeapi.co/api/v2';
-const LAST_GEN1_ID = 151;
-const CONCURRENCY = 8;
+import { API, LAST_NATIONAL_ID, mapWithConcurrency, range } from './lib.mjs';
 
 const STAT_KEY = {
   hp: 'hp',
@@ -46,21 +44,7 @@ async function fetchPokemon(id) {
   };
 }
 
-async function mapWithConcurrency(items, worker, limit) {
-  const results = new Array(items.length);
-  let cursor = 0;
-  async function run() {
-    while (cursor < items.length) {
-      const index = cursor++;
-      results[index] = await worker(items[index]);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, run));
-  return results;
-}
-
-const ids = Array.from({ length: LAST_GEN1_ID }, (_, i) => i + 1);
-const entries = await mapWithConcurrency(ids, fetchPokemon, CONCURRENCY);
+const entries = await mapWithConcurrency(range(1, LAST_NATIONAL_ID), fetchPokemon);
 entries.sort((a, b) => a.id - b.id);
 
 const rows = entries
@@ -78,7 +62,7 @@ const file = `// ARQUIVO GERADO — não edite à mão.
 import type { BaseStats } from '../models/pokemon.model';
 import type { PokemonType } from './pokemon-types';
 
-export interface Gen1PokedexEntry {
+export interface PokedexEntry {
   readonly id: number;
   readonly name: string;
   readonly types: readonly PokemonType[];
@@ -89,10 +73,10 @@ export interface Gen1PokedexEntry {
   readonly weight: number;
 }
 
-export const GEN1_POKEDEX: readonly Gen1PokedexEntry[] = [
+export const NATIONAL_POKEDEX: readonly PokedexEntry[] = [
 ${rows}
 ];
 `;
 
-await writeFile(new URL('../src/app/core/data/gen1-pokedex.ts', import.meta.url), file, 'utf8');
-console.log(`gen1-pokedex.ts gerado com ${entries.length} entradas.`);
+await writeFile(new URL('../src/app/core/data/national-pokedex.ts', import.meta.url), file, 'utf8');
+console.log(`national-pokedex.ts gerado com ${entries.length} entradas.`);

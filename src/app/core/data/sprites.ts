@@ -10,7 +10,7 @@ export function artworkUrl(id: number): string {
   return `${SPRITE_BASE}/other/official-artwork/${id}.png`;
 }
 
-/** `#001`, `#151` — número da Pokédex nacional formatado. */
+/** `#001`, `#493` — número da Pokédex nacional formatado. */
 export function pokedexNumber(id: number): string {
   return `#${String(id).padStart(3, '0')}`;
 }

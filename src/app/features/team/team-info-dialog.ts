@@ -5,11 +5,15 @@ import { Router } from '@angular/router';
 import { pokedexNumber } from '../../core/data/sprites';
 import {
   STAT_KEYS,
+  type EncounterCondition,
   type EncounterMethod,
   type EvolutionStage,
   type GameVersions,
   type PokemonSummary,
 } from '../../core/models/pokemon.model';
+import type { GameVersion } from '../../core/data/games';
+import type { PokemonType } from '../../core/data/pokemon-types';
+import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
 import { StatBar } from '../../shared/components/stat-bar';
 import { TypeBadge } from '../../shared/components/type-badge';
@@ -24,8 +28,6 @@ export interface TeamInfoData {
   readonly initialId: number;
 }
 
-const LAST_GEN1_ID = 151;
-
 const METHOD_LABEL: Readonly<Record<EncounterMethod, string>> = {
   walk: 'Grama / caverna',
   'old-rod': 'Old Rod',
@@ -39,6 +41,22 @@ const METHOD_LABEL: Readonly<Record<EncounterMethod, string>> = {
   pokeflute: 'Poké Flute',
   'npc-trade': 'Troca com NPC',
   'roaming-grass': 'Errante',
+  'roaming-water': 'Errante (água)',
+  headbutt: 'Headbutt',
+  'squirt-bottle': 'SquirtBottle',
+};
+
+const CONDITION_LABEL: Readonly<Record<EncounterCondition, string>> = {
+  morning: 'Manhã',
+  day: 'Dia',
+  night: 'Noite',
+  swarm: 'Swarm',
+  'radio-hoenn': 'Rádio: Hoenn Sound',
+  'radio-sinnoh': 'Rádio: Sinnoh Sound',
+  'bug-contest': 'Concurso de Insetos',
+  'safari-blocks': 'Safari com blocos',
+  'headbutt-common': 'Árvore comum',
+  'headbutt-rare': 'Árvore rara',
 };
 
 /** Métodos sem sorteio — a chance não significa nada para eles. */
@@ -49,12 +67,6 @@ const GUARANTEED: ReadonlySet<EncounterMethod> = new Set([
   'pokeflute',
   'npc-trade',
 ]);
-
-const VERSION_LABEL: Readonly<Record<GameVersions, string>> = {
-  both: 'FR / LG',
-  firered: 'Só FireRed',
-  leafgreen: 'Só LeafGreen',
-};
 
 /** Ficha de um membro do time: base stats, linha evolutiva e onde encontrar no jogo. */
 @Component({
@@ -187,7 +199,7 @@ const VERSION_LABEL: Readonly<Record<GameVersions, string>> = {
       <section class="flex flex-col gap-2" aria-labelledby="ficha-locais">
         <div>
           <h3 id="ficha-locais" class="text-sm font-semibold">Onde encontrar</h3>
-          <p class="text-xs text-muted-foreground">Em FireRed / LeafGreen.</p>
+          <p class="text-xs text-muted-foreground">Em {{ game.shortTitle }}.</p>
         </div>
         @if (encountersError(); as message) {
           <div class="flex flex-wrap items-center gap-2 text-sm">
@@ -217,7 +229,13 @@ const VERSION_LABEL: Readonly<Record<GameVersions, string>> = {
               }
               para conseguir.
             } @else {
-              Só é obtido por evento ou troca com outro jogo.
+              @if (evolvesInto(); as into) {
+                Consiga por reprodução: deixe um
+                <span class="font-medium text-foreground">{{ into.displayName }}</span>
+                na Creche.
+              } @else {
+                Só é obtido por evento ou troca com outro jogo.
+              }
             }
           </p>
         } @else {
@@ -227,7 +245,10 @@ const VERSION_LABEL: Readonly<Record<GameVersions, string>> = {
               {{
                 selected().displayName
               }}
-              em FireRed e LeafGreen
+              em
+              {{
+                game.shortTitle
+              }}
             </caption>
             <thead>
               <tr class="border-b border-border text-left text-xs text-muted-foreground">
@@ -245,11 +266,16 @@ const VERSION_LABEL: Readonly<Record<GameVersions, string>> = {
                       class="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground"
                     >
                       {{ methodLabel[row.method] }}
-                      @if (row.versions !== 'both') {
+                      @for (condition of row.conditions; track condition) {
+                        <span class="rounded bg-muted px-1 text-foreground">{{
+                          conditionLabel[condition]
+                        }}</span>
+                      }
+                      @if (versionOnly(row.versions); as version) {
                         <span
                           class="rounded border px-1 font-medium text-foreground"
-                          [style.border-color]="versionColor(row.versions)"
-                          >{{ versionLabel[row.versions] }}</span
+                          [style.border-color]="versionColor(version.colorType)"
+                          >Só {{ version.label }}</span
                         >
                       }
                     </span>
@@ -288,10 +314,13 @@ export class TeamInfoDialog {
   private readonly router = inject(Router);
   private readonly ref = inject<DialogRef<void>>(DialogRef);
   protected readonly data = inject<TeamInfoData>(DIALOG_DATA);
+  private readonly gameService = inject(GameService);
+  /** Fixo enquanto o modal está aberto — o jogo não muda por baixo dele. */
+  protected readonly game = this.gameService.current();
 
   protected readonly statKeys = STAT_KEYS;
   protected readonly methodLabel = METHOD_LABEL;
-  protected readonly versionLabel = VERSION_LABEL;
+  protected readonly conditionLabel = CONDITION_LABEL;
   protected readonly guaranteed = GUARANTEED;
 
   protected readonly selected = signal<PokemonSummary>(
@@ -306,16 +335,16 @@ export class TeamInfoDialog {
   });
   protected readonly encounters = rxResource({
     params: () => this.selected().id,
-    stream: ({ params }) => this.pokemon.getEncounters(params),
+    stream: ({ params }) => this.pokemon.getEncounters(params, this.game.id),
   });
 
   protected readonly detailError = computed(() => errorMessage(this.detail.error()));
   protected readonly encountersError = computed(() => errorMessage(this.encounters.error()));
   protected readonly encounterList = computed(() => this.encounters.value() ?? []);
 
-  /** Só a geração 1: Pichu, Crobat, Espeon e cia. não existem em FRLG sem troca. */
+  /** Só os estágios que existem no jogo (Pichu e Crobat não existem em FRLG, por exemplo). */
   private readonly evolutionLine = computed<readonly EvolutionStage[]>(() =>
-    (this.detail.value()?.evolutionLine ?? []).filter((stage) => stage.id <= LAST_GEN1_ID),
+    (this.detail.value()?.evolutionLine ?? []).filter((stage) => this.gameService.has(stage.id)),
   );
 
   protected readonly evolutionStages = computed<ReadonlyArray<readonly EvolutionStage[]>>(() => {
@@ -338,13 +367,29 @@ export class TeamInfoDialog {
     return line.find((stage) => stage.stage === current.stage - 1);
   });
 
+  /** Próximo estágio — de quem um bebê (Pichu, Togepi…) nasce na Creche. */
+  protected readonly evolvesInto = computed<EvolutionStage | undefined>(() => {
+    const line = this.evolutionLine();
+    const current = line.find((stage) => stage.id === this.selected().id);
+    if (!current) {
+      return undefined;
+    }
+    return line.find((stage) => stage.stage === current.stage + 1);
+  });
+
   protected readonly selectedTrigger = computed(
     () => this.evolutionLine().find((stage) => stage.id === this.selected().id)?.trigger ?? null,
   );
 
-  /** Borda na cor da capa: Fogo para FireRed, Planta para LeafGreen. */
-  protected versionColor(versions: GameVersions): string {
-    const type = versions === 'firered' ? 'fire' : 'grass';
+  /** A versão, quando o encontro é exclusivo de uma delas. */
+  protected versionOnly(versions: GameVersions): GameVersion | undefined {
+    return versions === 'both'
+      ? undefined
+      : this.game.versions.find((version) => version.id === versions);
+  }
+
+  /** Borda na cor da capa (Fogo para FireRed, Elétrico para HeartGold…). */
+  protected versionColor(type: PokemonType): string {
     return `color-mix(in oklab, var(--type-${type}) 60%, transparent)`;
   }
 

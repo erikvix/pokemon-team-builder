@@ -10,6 +10,7 @@ import {
 } from '../../core/data/pokemon-types';
 import { pokedexNumber } from '../../core/data/sprites';
 import { filterPokemon } from '../../core/services/pokemon-filter';
+import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
 import { TypeBadge } from '../../shared/components/type-badge';
 import { ButtonDirective } from '../../shared/ui/button.directive';
@@ -195,9 +196,9 @@ export class PokemonPickerDialog {
     initialValue: '',
   });
 
-  private readonly all = this.pokemon.listAllSync();
+  private readonly all = this.pokemon.listSync(inject(GameService).current().id);
 
-  /** Só os tipos que algum dos 151 tem — sem chip que não traz resultado. */
+  /** Só os tipos que algum Pokémon do jogo tem — sem chip que não traz resultado. */
   protected readonly availableTypes: readonly PokemonType[] = POKEMON_TYPES.filter((type) =>
     this.all.some((pokemon) => pokemon.types.includes(type)),
   );

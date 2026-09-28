@@ -1,7 +1,8 @@
 # Pokémon Team Builder
 
-Monte times de até 6 Pokémon da **geração 1** (#001–#151) e veja na hora as
-forças e fraquezas do time.
+Monte times de até 6 Pokémon para **FireRed/LeafGreen** (#001–#151) ou
+**HeartGold/SoulSilver** (os obtíveis no jogo, até #493) e veja na hora as
+forças e fraquezas do time. Cada jogo guarda o seu time.
 
 Fase atual: **só frontend**. Não há backend — `PokemonService` é a única porta
 de dados e foi desenhado para ser trocado por chamadas ao Spring Boot depois,
@@ -22,9 +23,10 @@ npm run format     # Prettier
 Regerar o índice da Pokédex a partir da PokeAPI (só quando precisar):
 
 ```bash
-npm run generate:pokedex
-npm run generate:moves       # ataques de FireRed/LeafGreen
-npm run generate:encounters  # onde encontrar em FireRed/LeafGreen
+npm run generate:pokedex                # índice nacional #001–#493
+npm run generate:encounters -- hgss     # locais + obtíveis (rode antes dos ataques)
+npm run generate:moves -- hgss          # ataques
+# troque `hgss` por `frlg` para FireRed/LeafGreen
 ```
 
 ## Stack
@@ -46,7 +48,7 @@ mesmas.
 ```
 src/app/
   core/
-    data/        tipos, tabela de eficácia, índice gerado dos 151, sprites
+    data/        jogos, tipos, tabela de eficácia, índices gerados (nacional e por jogo), sprites
     models/      domínio (PokemonSummary/Detail) e respostas da PokeAPI
     services/    PokemonService, TeamService, ThemeService, análise e filtros
   shared/
@@ -61,6 +63,7 @@ public/games/       logos dos jogos em SVG
 scripts/generate-pokedex.mjs
 scripts/generate-moves.mjs
 scripts/generate-encounters.mjs
+scripts/lib.mjs     configuração dos jogos para os geradores
 scripts/vectorize-logo.py
 ```
 
@@ -68,18 +71,22 @@ scripts/vectorize-logo.py
 
 | Rota           | O que faz                                                           |
 | -------------- | ------------------------------------------------------------------- |
-| `/`            | Escolha do jogo — hoje só FireRed/LeafGreen; leva para `/team`      |
-| `/pokedex`     | Grid dos 151, busca com debounce, filtro por tipo, ordenação        |
+| `/`            | Escolha do jogo (FRLG ou HGSS); leva para `/team?jogo=…`            |
+| `/pokedex`     | Grid do jogo atual, busca com debounce, filtro por tipo, ordenação  |
 | `/pokemon/:id` | Artwork, ficha, base stats, eficácia de tipos, linha evolutiva      |
 | `/team`        | 6 slots, análise do time, ficha (stats, evolução, locais) e ataques |
 | `*`            | 404 com visual próprio                                              |
 
 ## Decisões de UI
 
-**Dados em duas fontes.** A listagem precisa de tipo e base stats dos 151. Ao
-vivo isso custaria 151 requisições de ~270 kB no primeiro load, então o índice
-é gerado uma vez (`scripts/generate-pokedex.mjs`) e versionado em
-`core/data/gen1-pokedex.ts`. O detalhe continua vindo da PokeAPI em tempo real,
+**Dados em duas fontes.** A listagem precisa de tipo e base stats de #001 a
+#493. Ao vivo isso custaria centenas de requisições de ~270 kB no primeiro
+load, então o índice é gerado uma vez (`scripts/generate-pokedex.mjs`) e
+versionado em `core/data/national-pokedex.ts`; cada jogo filtra os seus
+(`core/data/games.ts`). Ataques e locais também são gerados por jogo
+(`<jogo>-moves.ts`, `<jogo>-encounters.ts`) e só baixam quando um modal abre.
+Em HGSS, "obtível" = aparece em algum local, ou evolui/nasce (Creche) de quem
+aparece — sem as evoluções que pedem um local de Sinnoh (Leafeon, Magnezone…). O detalhe continua vindo da PokeAPI em tempo real,
 com cache por id na sessão. Mesmo assim `PokemonService.list()` devolve
 `Observable`: a assinatura já é a que o backend vai ter, e as telas tratam
 carregando/vazio/erro desde agora.
@@ -91,7 +98,8 @@ tem 15 tipos (sem Sombrio, Aço e Fada) e algumas relações diferentes
 Escolhi a tabela vigente porque é a que casa com o que a tela pede e com o que
 o jogador espera hoje. Ela está isolada em `core/data/type-chart.ts` com as
 funções de cálculo puras e testadas — trocar pela tabela legada é mexer em um
-arquivo só.
+arquivo só. Pelo mesmo motivo, os tipos dos Pokémon são os atuais nos dois jogos
+(Clefairy aparece como Fada, Magnemite como Elétrico/Aço).
 
 **Cor nunca sozinha.** As cores canônicas de tipo aparecem como ponto e fundo
 tênue; o texto usa `--foreground` para garantir contraste AA nos dois temas. Na
@@ -104,7 +112,7 @@ busca fecha no Esc, escolhe o primeiro resultado no Enter e devolve o foco para
 onde estava. Tem link "pular para o conteúdo" e foco visível em tudo.
 
 **Renderização incremental em vez de virtual scroll.** O grid entrega 48 cards
-por vez com um botão "Mostrar mais". Com 151 itens, isso mantém o DOM pequeno
+por vez com um botão "Mostrar mais". Com algumas centenas de itens, isso mantém o DOM pequeno
 sem o custo do `cdk-virtual-scroll-viewport`, que exige altura de linha fixa e
 brigaria com o número de colunas variando de 2 a 6.
 

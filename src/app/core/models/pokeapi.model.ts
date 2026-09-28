@@ -74,6 +74,12 @@ export interface PokeApiEvolutionDetail {
   readonly trigger: NamedApiResource | null;
   readonly item: NamedApiResource | null;
   readonly min_happiness: number | null;
+  readonly held_item?: NamedApiResource | null;
+  readonly known_move?: NamedApiResource | null;
+  readonly party_species?: NamedApiResource | null;
+  readonly min_beauty?: number | null;
+  /** `''`, `'day'` ou `'night'`. */
+  readonly time_of_day?: string;
 }
 
 export interface PokeApiChainLink {

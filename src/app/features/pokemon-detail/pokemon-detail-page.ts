@@ -12,6 +12,7 @@ import { pokedexNumber } from '../../core/data/sprites';
 import { defensiveProfile, multiplierLabel, type Effectiveness } from '../../core/data/type-chart';
 import { STAT_KEYS, type EvolutionStage } from '../../core/models/pokemon.model';
 import { PokemonService } from '../../core/services/pokemon.service';
+import { GameService } from '../../core/services/game.service';
 import { TeamService } from '../../core/services/team.service';
 
 export interface EffectivenessGroup {
@@ -29,6 +30,7 @@ export interface EffectivenessGroup {
 export class PokemonDetailPage {
   private readonly pokemon = inject(PokemonService);
   protected readonly team = inject(TeamService);
+  protected readonly game = inject(GameService);
 
   /** Vem do parâmetro de rota `:id` (component input binding). */
   readonly id = input.required<string>();
@@ -53,7 +55,7 @@ export class PokemonDetailPage {
   protected readonly isLoading = this.resource.isLoading;
   protected readonly errorMessage = computed(() => {
     if (!this.isKnownId()) {
-      return 'Esse número não faz parte da geração 1 (#001–#151).';
+      return 'Esse número está fora da Pokédex do app (#001–#493).';
     }
     const error = this.resource.error();
     return error instanceof Error ? error.message : undefined;
@@ -61,6 +63,8 @@ export class PokemonDetailPage {
 
   protected readonly number = computed(() => pokedexNumber(this.numericId()));
   protected readonly inTeam = computed(() => this.team.has(this.numericId()));
+  /** O time é do jogo atual; quem não existe nele não entra. */
+  protected readonly inGame = computed(() => this.game.has(this.numericId()));
 
   /** Altura em metros e peso em quilos — a PokeAPI devolve dm e hg. */
   protected readonly height = computed(() => ((this.detail()?.height ?? 0) / 10).toFixed(1));

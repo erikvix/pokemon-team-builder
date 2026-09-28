@@ -1,6 +1,12 @@
 <div class="flex flex-col gap-4">
   <div class="flex flex-wrap items-end justify-between gap-3">
     <div>
+      <p class="flex flex-wrap items-center gap-x-2 text-xs font-medium text-muted-foreground">
+        {{ game.current().title }}
+        <a routerLink="/" class="rounded-sm underline underline-offset-4 hover:text-foreground">
+          Trocar jogo
+        </a>
+      </p>
       <h1 class="text-xl font-semibold tracking-tight">Meu time</h1>
       <p class="text-sm text-muted-foreground">
         Até {{ maxTeamSize }} Pokémon. Arraste os cards para reordenar — ou use as setas de cada

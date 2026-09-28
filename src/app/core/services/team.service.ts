@@ -1,23 +1,34 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { GAMES, type GameId } from '../data/games';
 import { analyzeTeam, type TeamAnalysis } from './team-analysis';
+import { GameService } from './game.service';
 import { PokemonService } from './pokemon.service';
 import type { PokemonSummary } from '../models/pokemon.model';
 
 export const MAX_TEAM_SIZE = 6;
-const STORAGE_KEY = 'ptb.team';
+
+/** FireRed/LeafGreen mantém a chave antiga, de antes de existirem outros jogos. */
+function storageKey(gameId: GameId): string {
+  return gameId === 'firered-leafgreen' ? 'ptb.team' : `ptb.team.${gameId}`;
+}
+
+type Teams = Readonly<Record<GameId, readonly number[]>>;
 
 /**
- * Estado do time. Hoje persiste em `localStorage`; quando o backend existir,
- * só esta classe muda (os componentes falam com os signals). O formato salvo é
- * a lista de ids, o mínimo necessário para remontar o time.
+ * Estado dos times — um por jogo; tudo aqui age no time do jogo atual. Hoje
+ * persiste em `localStorage`; quando o backend existir, só esta classe muda
+ * (os componentes falam com os signals). O formato salvo é a lista de ids, o
+ * mínimo necessário para remontar o time.
  */
 @Injectable({ providedIn: 'root' })
 export class TeamService {
   private readonly pokemon = inject(PokemonService);
-  private readonly ids = signal<readonly number[]>(readStoredIds());
+  private readonly game = inject(GameService);
+  private readonly teams = signal<Teams>(readStoredTeams());
+  private readonly ids = computed(() => this.teams()[this.game.current().id]);
 
   /** Ids na ordem escolhida pelo usuário. */
-  readonly memberIds = this.ids.asReadonly();
+  readonly memberIds = this.ids;
 
   /** Membros resolvidos, na ordem dos slots. */
   readonly members = computed<readonly PokemonSummary[]>(() =>
@@ -37,13 +48,20 @@ export class TeamService {
 
   constructor() {
     effect(() => {
-      const ids = this.ids();
+      const teams = this.teams();
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+        for (const game of GAMES) {
+          localStorage.setItem(storageKey(game.id), JSON.stringify(teams[game.id]));
+        }
       } catch {
         /* modo privado ou storage cheio: o time só não sobrevive ao reload */
       }
     });
+  }
+
+  /** Tamanho do time de um jogo qualquer — a tela inicial mostra de todos. */
+  sizeFor(gameId: GameId): number {
+    return this.teams()[gameId].length;
   }
 
   has(id: number): boolean {
@@ -52,24 +70,24 @@ export class TeamService {
 
   /** Adiciona se houver vaga e o Pokémon ainda não estiver no time. */
   add(id: number): boolean {
-    if (this.isFull() || this.has(id) || this.pokemon.getSummary(id) === undefined) {
+    if (this.isFull() || this.has(id) || !this.isValid(id)) {
       return false;
     }
-    this.ids.update((ids) => [...ids, id]);
+    this.update((ids) => [...ids, id]);
     return true;
   }
 
   remove(id: number): void {
-    this.ids.update((ids) => ids.filter((current) => current !== id));
+    this.update((ids) => ids.filter((current) => current !== id));
   }
 
   clear(): void {
-    this.ids.set([]);
+    this.update(() => []);
   }
 
   /** Move um membro de posição (drag-and-drop dos slots). */
   move(fromIndex: number, toIndex: number): void {
-    this.ids.update((ids) => {
+    this.update((ids) => {
       if (
         fromIndex === toIndex ||
         fromIndex < 0 ||
@@ -89,16 +107,25 @@ export class TeamService {
     });
   }
 
-  /** Substitui o time inteiro (import por URL). Ignora ids inválidos. */
+  /** Substitui o time inteiro (import por URL). Ignora ids inválidos ou de outro jogo. */
   replace(ids: readonly number[]): void {
     const valid: number[] = [];
     for (const id of ids) {
       if (valid.length >= MAX_TEAM_SIZE) break;
-      if (!valid.includes(id) && this.pokemon.getSummary(id) !== undefined) {
+      if (!valid.includes(id) && this.isValid(id)) {
         valid.push(id);
       }
     }
-    this.ids.set(valid);
+    this.update(() => valid);
+  }
+
+  private isValid(id: number): boolean {
+    return this.game.has(id) && this.pokemon.getSummary(id) !== undefined;
+  }
+
+  private update(change: (ids: readonly number[]) => readonly number[]): void {
+    const gameId = this.game.current().id;
+    this.teams.update((teams) => ({ ...teams, [gameId]: change(teams[gameId]) }));
   }
 
   /** Código compartilhável: ids separados por hífen (`25-6-9`). */
@@ -118,9 +145,14 @@ export function parseShareCode(code: string | null): readonly number[] {
     .filter((id) => Number.isInteger(id) && id > 0);
 }
 
-function readStoredIds(): readonly number[] {
+function readStoredTeams(): Teams {
+  const entries = GAMES.map((game) => [game.id, readStoredIds(storageKey(game.id))] as const);
+  return Object.fromEntries(entries) as Teams;
+}
+
+function readStoredIds(key: string): readonly number[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) {
       return [];
     }

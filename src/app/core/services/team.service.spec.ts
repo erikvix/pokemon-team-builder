@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { beforeEach, describe, expect, it } from 'vitest';
+import { GameService } from './game.service';
 import { MAX_TEAM_SIZE, TeamService, parseShareCode } from './team.service';
 
 function makeService(): TeamService {
@@ -30,7 +31,7 @@ describe('TeamService', () => {
     expect(team.members()[0]?.displayName).toBe('Pikachu');
   });
 
-  it('recusa duplicados, ids fora da geração 1 e time cheio', () => {
+  it('recusa duplicados, ids fora do jogo e time cheio', () => {
     expect(team.add(25)).toBe(true);
     expect(team.add(25)).toBe(false);
     expect(team.add(152)).toBe(false);
@@ -85,6 +86,30 @@ describe('TeamService', () => {
   it('gera o código de compartilhamento', () => {
     team.replace([25, 6, 9]);
     expect(team.toShareCode()).toBe('25-6-9');
+  });
+
+  it('guarda um time por jogo', () => {
+    const game = TestBed.inject(GameService);
+    team.add(25);
+    game.select('heartgold-soulsilver');
+    expect(team.size()).toBe(0);
+    expect(team.add(152)).toBe(true);
+    game.select('firered-leafgreen');
+    expect(team.memberIds()).toEqual([25]);
+    expect(team.sizeFor('heartgold-soulsilver')).toBe(1);
+  });
+
+  it('recusa Pokémon que não existem no jogo atual', () => {
+    expect(team.add(152)).toBe(false);
+    TestBed.inject(GameService).select('heartgold-soulsilver');
+    expect(team.add(470)).toBe(false);
+    expect(team.add(152)).toBe(true);
+  });
+
+  it('mantém o time antigo de FRLG na chave de antes', () => {
+    team.add(1);
+    TestBed.tick();
+    expect(localStorage.getItem('ptb.team')).toBe('[1]');
   });
 });
 

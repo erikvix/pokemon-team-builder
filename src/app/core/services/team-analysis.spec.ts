@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { GEN1_POKEDEX } from '../data/gen1-pokedex';
+import { NATIONAL_POKEDEX } from '../data/national-pokedex';
 import { statTotal, type PokemonSummary } from '../models/pokemon.model';
 import { analyzeTeam, uniqueTypes } from './team-analysis';
 
 function member(id: number): PokemonSummary {
-  const entry = GEN1_POKEDEX.find((item) => item.id === id);
+  const entry = NATIONAL_POKEDEX.find((item) => item.id === id);
   if (!entry) {
-    throw new Error(`Pokémon ${id} fora do índice da geração 1`);
+    throw new Error(`Pokémon ${id} fora do índice nacional`);
   }
   return {
     id: entry.id,

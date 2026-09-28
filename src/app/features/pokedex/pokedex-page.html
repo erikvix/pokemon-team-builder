@@ -3,13 +3,14 @@
     <div>
       <h1 class="text-xl font-semibold tracking-tight">Pokédex</h1>
       <p class="text-sm text-muted-foreground">
-        Os 151 Pokémon da geração 1. Clique num card para ver o detalhe ou use
-        <span class="font-medium text-foreground">+</span> para mandar direto pro time.
+        Os {{ total() }} Pokémon de {{ game.current().shortTitle }}. Clique num card para ver o
+        detalhe ou use <span class="font-medium text-foreground">+</span> para mandar direto pro
+        time.
       </p>
     </div>
     <p class="text-sm text-muted-foreground" aria-live="polite">
       @if (!isLoading() && !hasError()) {
-        {{ filtered().length }} de 151
+        {{ filtered().length }} de {{ total() }}
       }
     </p>
   </div>

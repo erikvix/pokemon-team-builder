@@ -8,6 +8,7 @@ import type {
   PokemonMove,
   PokemonSummary,
 } from '../../core/models/pokemon.model';
+import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
 import { TypeBadge } from '../../shared/components/type-badge';
 import { ButtonDirective } from '../../shared/ui/button.directive';
@@ -34,7 +35,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
   status: 'Status',
 };
 
-/** Ataques que cada membro do time aprende em FireRed/LeafGreen. */
+/** Ataques que cada membro do time aprende no jogo atual. */
 @Component({
   selector: 'app-team-moves-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -50,7 +51,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
     <header class="flex shrink-0 items-center gap-2 border-b border-border p-3">
       <div class="min-w-0 flex-1">
         <h2 id="ataques-titulo" class="text-sm font-semibold">Ataques do time</h2>
-        <p class="text-xs text-muted-foreground">Golpes aprendíveis em FireRed / LeafGreen.</p>
+        <p class="text-xs text-muted-foreground">Golpes aprendíveis em {{ game.shortTitle }}.</p>
       </div>
       <button
         appButton
@@ -115,7 +116,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
         </div>
       } @else if (moves().length === 0) {
         <p class="p-8 text-center text-sm text-muted-foreground">
-          {{ selected().displayName }} não aprende golpes dessa forma em FireRed / LeafGreen.
+          {{ selected().displayName }} não aprende golpes dessa forma em {{ game.shortTitle }}.
         </p>
       } @else {
         <table class="w-full border-collapse text-sm">
@@ -202,6 +203,8 @@ export class TeamMovesDialog {
   private readonly pokemon = inject(PokemonService);
   private readonly ref = inject<DialogRef<void>>(DialogRef);
   protected readonly data = inject<TeamMovesData>(DIALOG_DATA);
+  /** Fixo enquanto o modal está aberto — o jogo não muda por baixo dele. */
+  protected readonly game = inject(GameService).current();
 
   protected readonly methods = METHODS;
   protected readonly categoryLabel = CATEGORY_LABEL;
@@ -214,7 +217,7 @@ export class TeamMovesDialog {
 
   private readonly resource = rxResource({
     params: () => this.selected().id,
-    stream: ({ params }) => this.pokemon.getMoves(params),
+    stream: ({ params }) => this.pokemon.getMoves(params, this.game.id),
   });
 
   protected readonly moveset = this.resource.value;

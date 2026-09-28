@@ -14,6 +14,7 @@ import {
   typeColorVar,
   type PokemonType,
 } from '../../core/data/pokemon-types';
+import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
 import {
   SORT_KEYS,
@@ -29,7 +30,7 @@ import { InputDirective } from '../../shared/ui/input.directive';
 import { Skeleton } from '../../shared/ui/skeleton';
 import { PokemonCard } from './pokemon-card';
 
-/** Quantos cards entram por vez — evita jogar 151 nós no DOM de uma vez. */
+/** Quantos cards entram por vez — evita jogar centenas de nós no DOM de uma vez. */
 const PAGE_SIZE = 48;
 
 @Component({
@@ -47,7 +48,13 @@ export class PokedexPage {
   protected readonly sortKeys = SORT_KEYS;
   protected readonly sortLabel = SORT_LABEL;
 
-  private readonly resource = rxResource({ stream: () => this.pokemon.list() });
+  protected readonly game = inject(GameService);
+
+  private readonly resource = rxResource({
+    params: () => this.game.current().id,
+    stream: ({ params }) => this.pokemon.list(params),
+  });
+  protected readonly total = computed(() => this.game.current().pokemonIds.length);
 
   protected readonly status = this.resource.status;
   protected readonly isLoading = this.resource.isLoading;

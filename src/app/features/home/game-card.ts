@@ -6,10 +6,11 @@ import { MAX_TEAM_SIZE } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { CardDirective } from '../../shared/ui/card.directive';
 import { Icon } from '../../shared/ui/icon';
-import type { Game } from './game.model';
+import type { Game } from '../../core/data/games';
+import { artworkUrl } from '../../core/data/sprites';
 
 /**
- * Card do jogo. É um link de verdade para `/team` — o card inteiro é
+ * Card do jogo. É um link de verdade para `/team?jogo=…` — o card inteiro é
  * clicável pelo `after:inset-0`, e o teclado ganha o foco no próprio link.
  */
 @Component({
@@ -31,15 +32,34 @@ import type { Game } from './game.model';
       <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:gap-6">
         <!-- Logo do jogo. O alt vai vazio de propósito: o nome já está no
              título abaixo, e repetir viraria leitura dupla no leitor de tela. -->
-        <img
-          [src]="game().logo"
-          alt=""
-          width="1495"
-          height="884"
-          loading="lazy"
-          decoding="async"
-          class="h-auto w-44 shrink-0 self-center transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transform-none sm:w-48"
-        />
+        @if (game().logo; as logo) {
+          <img
+            [src]="logo"
+            alt=""
+            width="1495"
+            height="884"
+            loading="lazy"
+            decoding="async"
+            class="h-auto w-44 shrink-0 self-center transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transform-none sm:w-48"
+          />
+        } @else {
+          <!-- Sem logo: os lendários da capa, lado a lado. -->
+          <span
+            class="flex w-44 shrink-0 items-center justify-center self-center transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transform-none sm:w-48"
+          >
+            @for (id of game().artworkIds; track id) {
+              <img
+                [src]="artwork(id)"
+                alt=""
+                width="96"
+                height="96"
+                loading="lazy"
+                decoding="async"
+                class="-mx-2 size-24"
+              />
+            }
+          </span>
+        }
 
         <div class="min-w-0 flex-1">
           <p class="text-xs font-medium text-muted-foreground">
@@ -48,6 +68,7 @@ import type { Game } from './game.model';
           <h2 class="pt-0.5 text-lg font-semibold tracking-tight">
             <a
               [routerLink]="['/team']"
+              [queryParams]="{ jogo: game().id }"
               class="rounded-sm after:absolute after:inset-0 after:content-['']"
             >
               {{ game().title }}
@@ -66,7 +87,11 @@ import type { Game } from './game.model';
               class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5"
             >
               <app-icon name="users" [size]="12" />
-              Time de até {{ maxTeamSize }}
+              @if (teamSize() > 0) {
+                {{ teamSize() }} de {{ maxTeamSize }} no time
+              } @else {
+                Time de até {{ maxTeamSize }}
+              }
             </span>
           </div>
         </div>
@@ -92,10 +117,17 @@ export class GameCard {
 
   protected readonly maxTeamSize = MAX_TEAM_SIZE;
 
+  /** `151 Pokémon · #001–#151`. */
   protected readonly range = computed(() => {
-    const { from, to } = this.game().range;
-    return `${pokedexNumber(from)}–${pokedexNumber(to)}`;
+    const ids = this.game().pokemonIds;
+    const from = Math.min(...ids);
+    const to = Math.max(...ids);
+    return `${ids.length} Pokémon · ${pokedexNumber(from)}–${pokedexNumber(to)}`;
   });
+
+  protected artwork(id: number): string {
+    return artworkUrl(id);
+  }
 
   protected readonly accentGradient = computed(() => {
     const stops = this.game().accentTypes.map(typeColorVar);

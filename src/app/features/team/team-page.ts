@@ -10,6 +10,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { DEFAULT_GAME_ID } from '../../core/data/games';
+import { GameService } from '../../core/services/game.service';
 import { MAX_TEAM_SIZE, TeamService, parseShareCode } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { CardDirective } from '../../shared/ui/card.directive';
@@ -32,6 +35,7 @@ type Notice = { readonly kind: 'info' | 'success' | 'error'; readonly text: stri
     ButtonDirective,
     CardDirective,
     Icon,
+    RouterLink,
     TeamAnalysisPanel,
     TeamSlot,
   ],
@@ -39,10 +43,13 @@ type Notice = { readonly kind: 'info' | 'success' | 'error'; readonly text: stri
 })
 export class TeamPage {
   protected readonly team = inject(TeamService);
+  protected readonly game = inject(GameService);
   private readonly dialog = inject(Dialog);
 
   /** `?time=25-6-9` — time compartilhado por link. */
   readonly time = input<string | undefined>(undefined);
+  /** `?jogo=heartgold-soulsilver` — jogo do link ou do card da tela inicial. */
+  readonly jogo = input<string | undefined>(undefined);
 
   protected readonly maxTeamSize = MAX_TEAM_SIZE;
   protected readonly notice = signal<Notice>(null);
@@ -56,11 +63,17 @@ export class TeamPage {
   constructor() {
     // Importa o time do link só quando ele difere do que já está montado.
     effect(() => {
+      const gameId = this.jogo();
       const code = this.time();
-      if (!code || code === this.lastImportedCode) {
+      // Links de antes dos outros jogos não têm `jogo`: eram de FireRed/LeafGreen.
+      const target = gameId ?? (code ? DEFAULT_GAME_ID : undefined);
+      if (target) {
+        untracked(() => this.game.select(target));
+      }
+      if (!code || `${target}|${code}` === this.lastImportedCode) {
         return;
       }
-      this.lastImportedCode = code;
+      this.lastImportedCode = `${target}|${code}`;
       const ids = parseShareCode(code);
       // `untracked`: ler o time aqui não pode reagendar o effect a cada mudança.
       const differs = untracked(() => ids.join('-') !== this.team.toShareCode());
@@ -148,7 +161,8 @@ export class TeamPage {
   }
 
   protected async share(): Promise<void> {
-    const url = `${location.origin}/team?time=${this.team.toShareCode()}`;
+    const gameId = this.game.current().id;
+    const url = `${location.origin}/team?jogo=${gameId}&time=${this.team.toShareCode()}`;
     this.shareUrl.set(url);
     try {
       await navigator.clipboard.writeText(url);

@@ -4,9 +4,9 @@ import { MAX_TEAM_SIZE, TeamService } from '../../core/services/team.service';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { Icon } from '../../shared/ui/icon';
 import { GameCard } from './game-card';
-import { GAMES } from './game.model';
+import { GAMES } from '../../core/data/games';
 
-/** Tela inicial: escolha do jogo. Por enquanto só a geração 1. */
+/** Tela inicial: escolha do jogo. Cada jogo guarda o seu time. */
 @Component({
   selector: 'app-home-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -24,16 +24,10 @@ import { GAMES } from './game.model';
       <ul class="flex flex-col gap-3">
         @for (game of games; track game.id) {
           <li>
-            <app-game-card [game]="game" [teamSize]="team.size()" />
+            <app-game-card [game]="game" [teamSize]="team.sizeFor(game.id)" />
           </li>
         }
       </ul>
-
-      @if (team.size() > 0) {
-        <p class="text-sm text-muted-foreground" aria-live="polite">
-          Você já tem {{ team.size() }} de {{ maxTeamSize }} slots preenchidos.
-        </p>
-      }
 
       <footer class="flex items-center gap-2 border-t border-border pt-4">
         <p class="text-sm text-muted-foreground">Só quer olhar os Pokémon?</p>

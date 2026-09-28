@@ -30,7 +30,7 @@ export const STAT_LABEL: Readonly<Record<StatKey, { short: string; long: string 
   speed: { short: 'Spe', long: 'Velocidade' },
 };
 
-/** Maior base stat da geração 1 (Chansey, 250 de HP) — escala das barras. */
+/** Maior base stat até a geração 4 (Blissey, 255 de HP) — escala das barras. */
 export const MAX_BASE_STAT = 255;
 
 export function statTotal(stats: BaseStats): number {
@@ -101,7 +101,7 @@ export type MoveLearnMethod = 'levelUp' | 'machine' | 'tutor' | 'egg';
 export interface PokemonMove {
   readonly name: string;
   readonly displayName: string;
-  /** `null` é o tipo "???" (Curse, na geração 3). */
+  /** `null` é o tipo "???" (Curse, até a geração 4). */
   readonly type: PokemonType | null;
   readonly category: MoveCategory;
   readonly power: number | null;
@@ -117,7 +117,7 @@ export interface PokemonMove {
 /** Tudo o que o Pokémon aprende no jogo, agrupado por forma de aprender. */
 export type PokemonMoveset = Readonly<Record<MoveLearnMethod, readonly PokemonMove[]>>;
 
-/** Formas de encontro em FireRed/LeafGreen. */
+/** Formas de encontro nos jogos. */
 export type EncounterMethod =
   | 'walk'
   | 'old-rod'
@@ -125,15 +125,37 @@ export type EncounterMethod =
   | 'super-rod'
   | 'surf'
   | 'rock-smash'
+  | 'headbutt'
+  | 'squirt-bottle'
   | 'gift'
   | 'gift-egg'
   | 'static'
   | 'pokeflute'
   | 'npc-trade'
-  | 'roaming-grass';
+  | 'roaming-grass'
+  | 'roaming-water';
+
+/**
+ * Condição para o encontro acontecer (HGSS): horário do dia, rádio, swarm,
+ * Concurso de Insetos, blocos do Safari ou tipo de árvore no Headbutt.
+ */
+export type EncounterCondition =
+  | 'morning'
+  | 'day'
+  | 'night'
+  | 'swarm'
+  | 'radio-hoenn'
+  | 'radio-sinnoh'
+  | 'bug-contest'
+  | 'safari-blocks'
+  | 'headbutt-common'
+  | 'headbutt-rare';
+
+/** As duas versões de cada jogo. */
+export type VersionId = 'firered' | 'leafgreen' | 'heartgold' | 'soulsilver';
 
 /** Em qual versão o encontro existe — `both` quando nas duas. */
-export type GameVersions = 'both' | 'firered' | 'leafgreen';
+export type GameVersions = 'both' | VersionId;
 
 /** Um lugar onde o Pokémon aparece no jogo. */
 export interface PokemonEncounter {
@@ -141,7 +163,9 @@ export interface PokemonEncounter {
   readonly method: EncounterMethod;
   readonly minLevel: number;
   readonly maxLevel: number;
-  /** Chance de aparecer com esse método na área, em %. */
+  /** Chance de aparecer com esse método (e condições) na área, em %. */
   readonly chance: number;
   readonly versions: GameVersions;
+  /** Vazio = sem condição (qualquer horário, sem rádio etc.). */
+  readonly conditions: readonly EncounterCondition[];
 }
