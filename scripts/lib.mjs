@@ -13,6 +13,8 @@ export const LAST_NATIONAL_ID = 493;
  * `key` é o prefixo dos arquivos gerados (`frlg-moves.ts`). `ids` diz para
  * quais Pokémon gerar: um intervalo fixo, ou `'available'` para usar a lista
  * de obtíveis que o gerador de locais escreve (`hgss-available.ts`).
+ * `unobtainable` tira da lista quem a PokeAPI mostra no jogo mas que, sem
+ * troca com outro cartucho ou evento, não se consegue.
  */
 export const GAMES = {
   frlg: {
@@ -28,6 +30,12 @@ export const GAMES = {
     versions: ['heartgold', 'soulsilver'],
     generation: 4,
     ids: 'available',
+    unobtainable: {
+      384: 'Rayquaza: precisa de Kyogre e Groudon juntos, um de cada versão',
+      483: 'Dialga: só com o Arceus de evento, nas Sinjoh Ruins',
+      484: 'Palkia: só com o Arceus de evento, nas Sinjoh Ruins',
+      487: 'Giratina: só com o Arceus de evento, nas Sinjoh Ruins',
+    },
   },
 };
 

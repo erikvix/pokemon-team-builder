@@ -98,6 +98,22 @@ describe('PokemonService por jogo', () => {
     expect(hgss.some((pokemon) => pokemon.id === 470)).toBe(false);
   });
 
+  it('deixa fora de HGSS quem só vem por troca ou evento', () => {
+    const hgss = new Set(
+      makeService()
+        .listSync(HGSS)
+        .map((pokemon) => pokemon.id),
+    );
+    // Kyogre e Groudon se pegam (um em cada versão); Rayquaza precisa dos dois.
+    expect(hgss.has(382)).toBe(true);
+    expect(hgss.has(383)).toBe(true);
+    expect(hgss.has(384)).toBe(false);
+    // Dialga, Palkia e Giratina só com o Arceus de evento.
+    expect([483, 484, 487].some((id) => hgss.has(id))).toBe(false);
+    // Iniciais de Hoenn são presente do Steven — entram.
+    expect(hgss.has(252)).toBe(true);
+  });
+
   it('usa a categoria da geração 4 em HGSS, que vem do golpe', async () => {
     const moves = await firstValueFrom(makeService().getMoves(9, HGSS));
     // Bite: especial em FRLG (Sombrio), físico em HGSS.

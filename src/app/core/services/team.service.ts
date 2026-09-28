@@ -25,7 +25,10 @@ export class TeamService {
   private readonly pokemon = inject(PokemonService);
   private readonly game = inject(GameService);
   private readonly teams = signal<Teams>(readStoredTeams());
-  private readonly ids = computed(() => this.teams()[this.game.current().id]);
+  /** Ids salvos que ainda valem no jogo (a lista de um jogo pode mudar entre versões do app). */
+  private readonly ids = computed(() =>
+    this.teams()[this.game.current().id].filter((id) => this.game.has(id)),
+  );
 
   /** Ids na ordem escolhida pelo usuário. */
   readonly memberIds = this.ids;
@@ -125,7 +128,7 @@ export class TeamService {
 
   private update(change: (ids: readonly number[]) => readonly number[]): void {
     const gameId = this.game.current().id;
-    this.teams.update((teams) => ({ ...teams, [gameId]: change(teams[gameId]) }));
+    this.teams.update((teams) => ({ ...teams, [gameId]: change(this.ids()) }));
   }
 
   /** Código compartilhável: ids separados por hífen (`25-6-9`). */

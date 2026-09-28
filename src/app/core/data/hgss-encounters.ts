@@ -3110,9 +3110,6 @@ export const ENCOUNTERS: Readonly<Record<number, readonly PokemonEncounter[]>> =
   383: [
     { area: 'Embedded Tower (Groudon’s room)', method: 'static', minLevel: 50, maxLevel: 50, chance: 100, versions: 'soulsilver', conditions: [] },
   ],
-  384: [
-    { area: 'Embedded Tower (Rayquaza’s room)', method: 'static', minLevel: 50, maxLevel: 50, chance: 100, versions: 'both', conditions: [] },
-  ],
   396: [
     { area: 'pewter-city-area', method: 'headbutt', minLevel: 5, maxLevel: 12, chance: 35, versions: 'both', conditions: [] },
   ],
@@ -3437,13 +3434,4 @@ export const ENCOUNTERS: Readonly<Record<number, readonly PokemonEncounter[]>> =
   474: [],
   475: [],
   477: [],
-  483: [
-    { area: 'Sinjoy Ruins', method: 'static', minLevel: 1, maxLevel: 1, chance: 100, versions: 'both', conditions: [] },
-  ],
-  484: [
-    { area: 'Sinjoy Ruins', method: 'static', minLevel: 1, maxLevel: 1, chance: 100, versions: 'both', conditions: [] },
-  ],
-  487: [
-    { area: 'Sinjoy Ruins', method: 'static', minLevel: 1, maxLevel: 1, chance: 100, versions: 'both', conditions: [] },
-  ],
 };

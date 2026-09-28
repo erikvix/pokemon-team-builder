@@ -217,7 +217,7 @@ function collapseTimes(rows) {
 /**
  * Obtíveis no jogo: quem aparece em algum lugar, mais evoluções (menos as que
  * pedem um local de outra região, como Leafeon) e pré-evoluções (reprodução),
- * até não entrar mais ninguém.
+ * até não entrar mais ninguém. Quem está em `unobtainable` nunca entra.
  */
 async function availableFrom(encounteredIds) {
   const species = await mapWithConcurrency(range(1, LAST_NATIONAL_ID), (id) =>
@@ -242,12 +242,14 @@ async function availableFrom(encounteredIds) {
   };
   chains.forEach((chain) => walk(chain.chain));
 
-  const available = new Set(encounteredIds);
+  const blocked = new Set(Object.keys(game.unobtainable ?? {}).map(Number));
+  const available = new Set(encounteredIds.filter((id) => !blocked.has(id)));
   let grew = true;
   while (grew) {
     grew = false;
     for (const { parent, child, reachable } of edges) {
       if (parent > LAST_NATIONAL_ID || child > LAST_NATIONAL_ID) continue;
+      if (blocked.has(parent) || blocked.has(child)) continue;
       if (available.has(parent) && reachable && !available.has(child)) {
         available.add(child);
         grew = true;

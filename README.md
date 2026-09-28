@@ -86,7 +86,10 @@ versionado em `core/data/national-pokedex.ts`; cada jogo filtra os seus
 (`core/data/games.ts`). Ataques e locais também são gerados por jogo
 (`<jogo>-moves.ts`, `<jogo>-encounters.ts`) e só baixam quando um modal abre.
 Em HGSS, "obtível" = aparece em algum local, ou evolui/nasce (Creche) de quem
-aparece — sem as evoluções que pedem um local de Sinnoh (Leafeon, Magnezone…). O detalhe continua vindo da PokeAPI em tempo real,
+aparece — sem as evoluções que pedem um local de Sinnoh (Leafeon, Magnezone…)
+e sem quem só vem por troca ou evento (Rayquaza, Dialga, Palkia, Giratina; lista
+em `scripts/lib.mjs`). Os da geração 3 e 4 que ficam vêm de mecânicas do
+próprio jogo: presente do Steven, rádio (Hoenn/Sinnoh Sound), swarms e Safari. O detalhe continua vindo da PokeAPI em tempo real,
 com cache por id na sessão. Mesmo assim `PokemonService.list()` devolve
 `Observable`: a assinatura já é a que o backend vai ter, e as telas tratam
 carregando/vazio/erro desde agora.

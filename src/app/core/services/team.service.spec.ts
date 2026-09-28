@@ -106,6 +106,13 @@ describe('TeamService', () => {
     expect(team.add(152)).toBe(true);
   });
 
+  it('ignora ids salvos que o jogo não aceita mais', () => {
+    localStorage.setItem('ptb.team.heartgold-soulsilver', JSON.stringify([152, 384]));
+    const fresh = makeService();
+    TestBed.inject(GameService).select('heartgold-soulsilver');
+    expect(fresh.memberIds()).toEqual([152]);
+  });
+
   it('mantém o time antigo de FRLG na chave de antes', () => {
     team.add(1);
     TestBed.tick();
