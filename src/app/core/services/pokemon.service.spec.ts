@@ -148,3 +148,25 @@ describe('PokemonService por jogo', () => {
     );
   });
 });
+
+describe('PokemonService.getAbilities', () => {
+  it('usa a habilidade do jogo, não a atual (Gengar tinha Levitate)', async () => {
+    const service = makeService();
+    for (const game of [FRLG, HGSS] as const) {
+      const abilities = await firstValueFrom(service.getAbilities(94, game));
+      expect(abilities.map((ability) => ability.displayName)).toEqual(['Levitate']);
+      expect(abilities[0]?.description).toBeTruthy();
+    }
+  });
+
+  it('não inclui habilidades ocultas, que só vieram na geração 5', async () => {
+    const abilities = await firstValueFrom(makeService().getAbilities(25, FRLG));
+    expect(abilities.map((ability) => ability.name)).toEqual(['static']);
+  });
+
+  it('falha com erro de domínio para quem não está no jogo', async () => {
+    await expect(firstValueFrom(makeService().getAbilities(152, FRLG))).rejects.toBeInstanceOf(
+      PokemonDataError,
+    );
+  });
+});

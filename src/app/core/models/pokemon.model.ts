@@ -117,6 +117,14 @@ export interface PokemonMove {
 /** Tudo o que o Pokémon aprende no jogo, agrupado por forma de aprender. */
 export type PokemonMoveset = Readonly<Record<MoveLearnMethod, readonly PokemonMove[]>>;
 
+/** Habilidade como era num jogo (sem as ocultas, que só vieram na geração 5). */
+export interface GameAbility {
+  readonly name: string;
+  readonly displayName: string;
+  /** Texto do jogo (inglês — a PokeAPI não tem português). */
+  readonly description: string | null;
+}
+
 /** Formas de encontro nos jogos. */
 export type EncounterMethod =
   | 'walk'

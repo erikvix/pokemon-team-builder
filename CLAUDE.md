@@ -23,6 +23,6 @@ os primitivos do projeto (`src/app/shared/ui`, tokens em `src/styles.css`).
   `git revert`.
 - Antes do push: `npm test` e `npm run build` (Node ≥ 22.22.3 — o Angular 22
   recusa versões anteriores) e `npx prettier --check` nos arquivos alterados.
-- Arquivos em `src/app/core/data/*-{moves,encounters,available}.ts` e
+- Arquivos em `src/app/core/data/*-{moves,encounters,available,abilities}.ts` e
   `national-pokedex.ts` são gerados — edite os scripts em `scripts/` e regere.
 - Textos da interface e comentários em português.

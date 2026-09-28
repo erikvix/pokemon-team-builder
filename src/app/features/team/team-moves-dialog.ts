@@ -2,15 +2,10 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { pokedexNumber } from '../../core/data/sprites';
-import type {
-  MoveCategory,
-  MoveLearnMethod,
-  PokemonMove,
-  PokemonSummary,
-} from '../../core/models/pokemon.model';
+import type { MoveLearnMethod, PokemonMove, PokemonSummary } from '../../core/models/pokemon.model';
 import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
-import { TypeBadge } from '../../shared/components/type-badge';
+import { MOVE_METHODS, MoveTable } from '../../shared/components/move-table';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { Icon } from '../../shared/ui/icon';
 import { Skeleton } from '../../shared/ui/skeleton';
@@ -22,24 +17,13 @@ export interface TeamMovesData {
   readonly initialId: number;
 }
 
-const METHODS: ReadonlyArray<{ readonly key: MoveLearnMethod; readonly label: string }> = [
-  { key: 'levelUp', label: 'Por nível' },
-  { key: 'machine', label: 'TM / HM' },
-  { key: 'tutor', label: 'Tutor' },
-  { key: 'egg', label: 'Ovo' },
-];
-
-const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
-  physical: 'Físico',
-  special: 'Especial',
-  status: 'Status',
-};
+const METHODS = MOVE_METHODS;
 
 /** Ataques que cada membro do time aprende no jogo atual. */
 @Component({
   selector: 'app-team-moves-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonDirective, Icon, Skeleton, TeamMemberTabs, TypeBadge],
+  imports: [ButtonDirective, Icon, MoveTable, Skeleton, TeamMemberTabs],
   host: {
     class:
       'flex max-h-[85vh] w-[min(46rem,94vw)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
@@ -119,78 +103,11 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
           {{ selected().displayName }} não aprende golpes dessa forma em {{ game.shortTitle }}.
         </p>
       } @else {
-        <table class="w-full border-collapse text-sm">
-          <caption class="sr-only">
-            Ataques de
-            {{
-              selected().displayName
-            }}
-            —
-            {{
-              methodLabel()
-            }}
-          </caption>
-          <thead>
-            <tr class="border-b border-border text-left text-xs text-muted-foreground">
-              @if (method() === 'levelUp' || method() === 'machine') {
-                <th scope="col" class="w-12 py-2 pr-2 font-medium">
-                  {{ method() === 'levelUp' ? 'Nv.' : 'Máq.' }}
-                </th>
-              }
-              <th scope="col" class="py-2 pr-2 font-medium">Golpe</th>
-              <th scope="col" class="hidden py-2 pr-2 font-medium sm:table-cell">Categoria</th>
-              <th scope="col" class="w-12 py-2 pr-2 text-right font-medium">
-                <abbr title="Poder" class="no-underline">Pod.</abbr>
-              </th>
-              <th scope="col" class="w-12 py-2 pr-2 text-right font-medium">
-                <abbr title="Precisão" class="no-underline">Prec.</abbr>
-              </th>
-              <th scope="col" class="w-10 py-2 text-right font-medium">PP</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (move of moves(); track $index) {
-              <tr class="border-b border-border/60 align-top last:border-0">
-                @if (method() === 'levelUp') {
-                  <td class="py-2 pr-2 font-mono text-xs text-muted-foreground">
-                    {{ move.level === 1 ? 'Início' : move.level }}
-                  </td>
-                } @else if (method() === 'machine') {
-                  <td class="py-2 pr-2 font-mono text-xs text-muted-foreground">
-                    {{ move.machine }}
-                  </td>
-                }
-                <td class="py-2 pr-2">
-                  <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span class="font-medium">{{ move.displayName }}</span>
-                    @if (move.type; as type) {
-                      <app-type-badge [type]="type" size="sm" />
-                    } @else {
-                      <span
-                        class="rounded-md border border-border px-1.5 py-0.5 text-[11px] font-medium"
-                        >???</span
-                      >
-                    }
-                    <span class="text-[11px] text-muted-foreground sm:hidden">
-                      {{ categoryLabel[move.category] }}
-                    </span>
-                  </div>
-                  @if (move.description) {
-                    <p class="mt-0.5 text-xs text-muted-foreground">{{ move.description }}</p>
-                  }
-                </td>
-                <td class="hidden py-2 pr-2 text-xs sm:table-cell">
-                  {{ categoryLabel[move.category] }}
-                </td>
-                <td class="py-2 pr-2 text-right font-mono text-xs">{{ move.power ?? '—' }}</td>
-                <td class="py-2 pr-2 text-right font-mono text-xs">
-                  {{ move.accuracy ?? '—' }}
-                </td>
-                <td class="py-2 text-right font-mono text-xs">{{ move.pp ?? '—' }}</td>
-              </tr>
-            }
-          </tbody>
-        </table>
+        <app-move-table
+          [moves]="moves()"
+          [method]="method()"
+          [caption]="'Ataques de ' + selected().displayName + ' — ' + methodLabel()"
+        />
       }
     </div>
 
@@ -207,7 +124,6 @@ export class TeamMovesDialog {
   protected readonly game = inject(GameService).current();
 
   protected readonly methods = METHODS;
-  protected readonly categoryLabel = CATEGORY_LABEL;
   protected readonly skeletonRows = [0, 1, 2, 3, 4, 5];
 
   protected readonly selected = signal<PokemonSummary>(

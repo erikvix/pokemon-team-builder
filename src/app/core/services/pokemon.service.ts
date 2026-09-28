@@ -27,6 +27,7 @@ import {
   statTotal,
   type BaseStats,
   type EvolutionStage,
+  type GameAbility,
   type MoveLearnMethod,
   type PokemonAbility,
   type PokemonDetail,
@@ -54,6 +55,11 @@ interface MovesModule {
   readonly LEARNSETS: Readonly<Record<number, GameLearnset>>;
 }
 
+interface AbilitiesModule {
+  readonly ABILITIES: Readonly<Record<string, string | null>>;
+  readonly POKEMON_ABILITIES: Readonly<Record<number, readonly string[]>>;
+}
+
 interface EncountersModule {
   readonly ENCOUNTERS: Readonly<Record<number, readonly PokemonEncounter[]>>;
 }
@@ -63,15 +69,24 @@ interface EncountersModule {
  * separar um chunk por arquivo.
  */
 const GAME_DATA: Readonly<
-  Record<GameId, { moves: () => Promise<MovesModule>; encounters: () => Promise<EncountersModule> }>
+  Record<
+    GameId,
+    {
+      moves: () => Promise<MovesModule>;
+      encounters: () => Promise<EncountersModule>;
+      abilities: () => Promise<AbilitiesModule>;
+    }
+  >
 > = {
   'firered-leafgreen': {
     moves: () => import('../data/frlg-moves'),
     encounters: () => import('../data/frlg-encounters'),
+    abilities: () => import('../data/frlg-abilities'),
   },
   'heartgold-soulsilver': {
     moves: () => import('../data/hgss-moves'),
     encounters: () => import('../data/hgss-encounters'),
+    abilities: () => import('../data/hgss-abilities'),
   },
 };
 
@@ -122,6 +137,7 @@ export class PokemonService {
   /** Índices por jogo, baixados só quando alguém abre ataques ou locais. */
   private readonly movesData = new Map<GameId, Observable<MovesModule>>();
   private readonly encountersData = new Map<GameId, Observable<EncountersModule>>();
+  private readonly abilitiesData = new Map<GameId, Observable<AbilitiesModule>>();
 
   private readonly summaries: readonly PokemonSummary[] = NATIONAL_POKEDEX.map((entry) => ({
     id: entry.id,
@@ -230,6 +246,30 @@ export class PokemonService {
           throw new PokemonDataError(`Não encontramos os locais do Pokémon #${id} nesse jogo.`);
         }
         return encounters;
+      }),
+    );
+  }
+
+  /** Habilidades do Pokémon como eram no jogo, com a descrição daquele jogo. */
+  getAbilities(id: number, gameId: GameId): Observable<readonly GameAbility[]> {
+    return cachedImport(
+      this.abilitiesData,
+      gameId,
+      GAME_DATA[gameId].abilities,
+      'as habilidades',
+    ).pipe(
+      map(({ ABILITIES, POKEMON_ABILITIES }) => {
+        const names = POKEMON_ABILITIES[id];
+        if (!names) {
+          throw new PokemonDataError(
+            `Não encontramos as habilidades do Pokémon #${id} nesse jogo.`,
+          );
+        }
+        return names.map((name) => ({
+          name,
+          displayName: displayName(name),
+          description: ABILITIES[name] ?? null,
+        }));
       }),
     );
   }

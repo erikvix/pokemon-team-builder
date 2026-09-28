@@ -5,16 +5,12 @@ import { Router } from '@angular/router';
 import { pokedexNumber } from '../../core/data/sprites';
 import {
   STAT_KEYS,
-  type EncounterCondition,
-  type EncounterMethod,
   type EvolutionStage,
-  type GameVersions,
   type PokemonSummary,
 } from '../../core/models/pokemon.model';
-import type { GameVersion } from '../../core/data/games';
-import type { PokemonType } from '../../core/data/pokemon-types';
 import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
+import { EncounterTable } from '../../shared/components/encounter-table';
 import { StatBar } from '../../shared/components/stat-bar';
 import { TypeBadge } from '../../shared/components/type-badge';
 import { ButtonDirective } from '../../shared/ui/button.directive';
@@ -28,51 +24,11 @@ export interface TeamInfoData {
   readonly initialId: number;
 }
 
-const METHOD_LABEL: Readonly<Record<EncounterMethod, string>> = {
-  walk: 'Grama / caverna',
-  'old-rod': 'Old Rod',
-  'good-rod': 'Good Rod',
-  'super-rod': 'Super Rod',
-  surf: 'Surf',
-  'rock-smash': 'Rock Smash',
-  gift: 'Presente',
-  'gift-egg': 'Ovo de presente',
-  static: 'Encontro fixo',
-  pokeflute: 'Poké Flute',
-  'npc-trade': 'Troca com NPC',
-  'roaming-grass': 'Errante',
-  'roaming-water': 'Errante (água)',
-  headbutt: 'Headbutt',
-  'squirt-bottle': 'SquirtBottle',
-};
-
-const CONDITION_LABEL: Readonly<Record<EncounterCondition, string>> = {
-  morning: 'Manhã',
-  day: 'Dia',
-  night: 'Noite',
-  swarm: 'Swarm',
-  'radio-hoenn': 'Rádio: Hoenn Sound',
-  'radio-sinnoh': 'Rádio: Sinnoh Sound',
-  'bug-contest': 'Concurso de Insetos',
-  'safari-blocks': 'Safari com blocos',
-  'headbutt-common': 'Árvore comum',
-  'headbutt-rare': 'Árvore rara',
-};
-
-/** Métodos sem sorteio — a chance não significa nada para eles. */
-const GUARANTEED: ReadonlySet<EncounterMethod> = new Set([
-  'gift',
-  'gift-egg',
-  'static',
-  'pokeflute',
-  'npc-trade',
-]);
-
 /** Ficha de um membro do time: base stats, linha evolutiva e onde encontrar no jogo. */
 @Component({
   selector: 'app-team-info-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonDirective, Icon, Skeleton, StatBar, TeamMemberTabs, TypeBadge],
+  imports: [ButtonDirective, EncounterTable, Icon, Skeleton, StatBar, TeamMemberTabs, TypeBadge],
   host: {
     class:
       'flex max-h-[85vh] w-[min(40rem,94vw)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
@@ -239,61 +195,11 @@ const GUARANTEED: ReadonlySet<EncounterMethod> = new Set([
             }
           </p>
         } @else {
-          <table class="w-full border-collapse text-sm">
-            <caption class="sr-only">
-              Onde encontrar
-              {{
-                selected().displayName
-              }}
-              em
-              {{
-                game.shortTitle
-              }}
-            </caption>
-            <thead>
-              <tr class="border-b border-border text-left text-xs text-muted-foreground">
-                <th scope="col" class="py-2 pr-2 font-medium">Local</th>
-                <th scope="col" class="w-16 py-2 pr-2 text-right font-medium">Nível</th>
-                <th scope="col" class="w-14 py-2 text-right font-medium">Chance</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (row of encounterList(); track $index) {
-                <tr class="border-b border-border/60 align-top last:border-0">
-                  <td class="py-2 pr-2">
-                    <span class="font-medium">{{ row.area }}</span>
-                    <span
-                      class="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground"
-                    >
-                      {{ methodLabel[row.method] }}
-                      @for (condition of row.conditions; track condition) {
-                        <span class="rounded bg-muted px-1 text-foreground">{{
-                          conditionLabel[condition]
-                        }}</span>
-                      }
-                      @if (versionOnly(row.versions); as version) {
-                        <span
-                          class="rounded border px-1 font-medium text-foreground"
-                          [style.border-color]="versionColor(version.colorType)"
-                          >Só {{ version.label }}</span
-                        >
-                      }
-                    </span>
-                  </td>
-                  <td class="py-2 pr-2 text-right font-mono text-xs">
-                    {{
-                      row.minLevel === row.maxLevel
-                        ? row.minLevel
-                        : row.minLevel + '–' + row.maxLevel
-                    }}
-                  </td>
-                  <td class="py-2 text-right font-mono text-xs">
-                    {{ guaranteed.has(row.method) ? '—' : row.chance + '%' }}
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <app-encounter-table
+            [encounters]="encounterList()"
+            [game]="game"
+            [caption]="'Onde encontrar ' + selected().displayName + ' em ' + game.shortTitle"
+          />
         }
       </section>
     </div>
@@ -319,9 +225,6 @@ export class TeamInfoDialog {
   protected readonly game = this.gameService.current();
 
   protected readonly statKeys = STAT_KEYS;
-  protected readonly methodLabel = METHOD_LABEL;
-  protected readonly conditionLabel = CONDITION_LABEL;
-  protected readonly guaranteed = GUARANTEED;
 
   protected readonly selected = signal<PokemonSummary>(
     this.data.members.find((member) => member.id === this.data.initialId) ?? this.data.members[0]!,
@@ -380,18 +283,6 @@ export class TeamInfoDialog {
   protected readonly selectedTrigger = computed(
     () => this.evolutionLine().find((stage) => stage.id === this.selected().id)?.trigger ?? null,
   );
-
-  /** A versão, quando o encontro é exclusivo de uma delas. */
-  protected versionOnly(versions: GameVersions): GameVersion | undefined {
-    return versions === 'both'
-      ? undefined
-      : this.game.versions.find((version) => version.id === versions);
-  }
-
-  /** Borda na cor da capa (Fogo para FireRed, Elétrico para HeartGold…). */
-  protected versionColor(type: PokemonType): string {
-    return `color-mix(in oklab, var(--type-${type}) 60%, transparent)`;
-  }
 
   protected retryDetail(): void {
     this.detail.reload();

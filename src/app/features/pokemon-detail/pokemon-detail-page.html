@@ -107,21 +107,6 @@
               <dt class="text-xs text-muted-foreground">Peso</dt>
               <dd class="font-medium tabular-nums">{{ weight() }} kg</dd>
             </div>
-            <div class="col-span-2">
-              <dt class="text-xs text-muted-foreground">Habilidades</dt>
-              <dd class="flex flex-wrap gap-1.5 pt-1">
-                @for (ability of pokemon.abilities; track ability.name) {
-                  <span
-                    class="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 text-xs"
-                  >
-                    {{ ability.displayName }}
-                    @if (ability.isHidden) {
-                      <span class="text-muted-foreground">(oculta)</span>
-                    }
-                  </span>
-                }
-              </dd>
-            </div>
           </dl>
           @if (pokemon.flavorText) {
             <p class="border-t border-border pt-3 text-sm text-muted-foreground">
@@ -258,5 +243,8 @@
         }
       </div>
     </div>
+
+    <!-- Habilidades, locais e ataques em cada jogo -->
+    <app-pokemon-game-section [pokemonId]="pokemon.id" [displayName]="pokemon.displayName" />
   </article>
 }

@@ -14,6 +14,7 @@ import { STAT_KEYS, type EvolutionStage } from '../../core/models/pokemon.model'
 import { PokemonService } from '../../core/services/pokemon.service';
 import { GameService } from '../../core/services/game.service';
 import { TeamService } from '../../core/services/team.service';
+import { PokemonGameSection } from './pokemon-game-section';
 
 export interface EffectivenessGroup {
   readonly multiplier: Effectiveness;
@@ -24,7 +25,16 @@ export interface EffectivenessGroup {
 @Component({
   selector: 'app-pokemon-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, ButtonDirective, CardDirective, Icon, Skeleton, StatBar, TypeBadge],
+  imports: [
+    RouterLink,
+    ButtonDirective,
+    CardDirective,
+    Icon,
+    PokemonGameSection,
+    Skeleton,
+    StatBar,
+    TypeBadge,
+  ],
   templateUrl: './pokemon-detail-page.html',
 })
 export class PokemonDetailPage {

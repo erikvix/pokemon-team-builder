@@ -1,5 +1,5 @@
 /**
- * Gera `src/app/core/data/<jogo>-moves.ts` a partir da PokeAPI.
+ * Gera `src/app/core/data/<jogo>-moves.ts` e `<jogo>-abilities.ts` a partir da PokeAPI.
  *
  * Os ataques que cada Pokémon do jogo aprende, mais os dados de cada golpe
  * (tipo, categoria, poder, precisão, PP) como eram *naquele jogo*. Ao vivo
@@ -10,7 +10,7 @@
  * (hgss precisa do `hgss-available.ts`, escrito pelo generate-encounters.)
  */
 import { writeFile } from 'node:fs/promises';
-import { API, gameFromArgs, getJson, idsFor, mapWithConcurrency, str } from './lib.mjs';
+import { API, gameFromArgs, getJson, idFromUrl, idsFor, mapWithConcurrency, str } from './lib.mjs';
 
 const game = gameFromArgs();
 
@@ -59,7 +59,47 @@ async function fetchLearnset(id) {
     }
   }
   learnset.levelUp.sort((a, b) => a[0] - b[0] || a[1].localeCompare(b[1]));
-  return { id, learnset };
+  return { id, learnset, abilities: abilitiesInGame(data) };
+}
+
+const generationNumber = (resource) => idFromUrl(resource.url);
+
+/**
+ * Habilidades como eram no jogo. Cada entrada de `past_abilities` vale até a
+ * geração indicada; a mais próxima à do jogo (sem ser anterior) define o
+ * slot, e `ability: null` quer dizer que o slot ainda não existia (as ocultas,
+ * que só chegaram na geração 5).
+ */
+function abilitiesInGame(data) {
+  const slots = new Map(data.abilities.map((entry) => [entry.slot, entry]));
+  const past = data.past_abilities
+    .filter((entry) => generationNumber(entry.generation) >= game.generation)
+    .sort((a, b) => generationNumber(b.generation) - generationNumber(a.generation));
+  // Da mais recente para a mais antiga: a última aplicada é a mais próxima do jogo.
+  for (const entry of past) {
+    for (const ability of entry.abilities) {
+      slots.set(ability.slot, ability);
+    }
+  }
+  return [...slots.values()]
+    .filter((entry) => entry.ability !== null && !(game.generation < 5 && entry.is_hidden))
+    .sort((a, b) => a.slot - b.slot)
+    .map((entry) => entry.ability.name);
+}
+
+async function fetchAbility(name) {
+  const data = await getJson(`${API}/ability/${name}`);
+  const flavor = data.flavor_text_entries.find(
+    (item) => item.version_group.name === game.versionGroup && item.language.name === 'en',
+  );
+  return { name, description: flavor ? clean(flavor.flavor_text) : null };
+}
+
+function clean(text) {
+  return text
+    .replace(/[\n\f\r\u00ad]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 /**
@@ -180,3 +220,25 @@ ${learnsetRows}
 
 await writeFile(new URL(`../src/app/core/data/${fileName}`, import.meta.url), file, 'utf8');
 console.log(`${fileName} gerado com ${moves.length} golpes e ${learnsets.length} learnsets.`);
+
+const abilityNames = [...new Set(learnsets.flatMap(({ abilities }) => abilities))].sort();
+const abilities = await mapWithConcurrency(abilityNames, fetchAbility);
+const abilitiesFile = `${game.key}-abilities.ts`;
+await writeFile(
+  new URL(`../src/app/core/data/${abilitiesFile}`, import.meta.url),
+  `// ARQUIVO GERADO — não edite à mão.
+// Rode \`node scripts/generate-moves.mjs ${game.key}\` para regerar a partir da PokeAPI.
+
+/** Descrição de cada habilidade no jogo (inglês — a PokeAPI não tem português). */
+export const ABILITIES: Readonly<Record<string, string | null>> = {
+${abilities.map((a) => `  ${str(a.name)}: ${str(a.description)},`).join('\n')}
+};
+
+/** Habilidades de cada Pokémon como eram no jogo, na ordem dos slots. */
+export const POKEMON_ABILITIES: Readonly<Record<number, readonly string[]>> = {
+${learnsets.map(({ id, abilities: list }) => `  ${id}: [${list.map(str).join(', ')}],`).join('\n')}
+};
+`,
+  'utf8',
+);
+console.log(`${abilitiesFile} gerado com ${abilities.length} habilidades.`);

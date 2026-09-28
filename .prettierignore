@@ -7,3 +7,5 @@ src/app/core/data/hgss-moves.ts
 src/app/core/data/hgss-encounters.ts
 src/app/core/data/hgss-available.ts
 src/app/core/data/frlg-available.ts
+src/app/core/data/frlg-abilities.ts
+src/app/core/data/hgss-abilities.ts
