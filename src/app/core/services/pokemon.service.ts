@@ -88,6 +88,11 @@ const GAME_DATA: Readonly<
     encounters: () => import('../data/hgss-encounters'),
     abilities: () => import('../data/hgss-abilities'),
   },
+  'ruby-sapphire-emerald': {
+    moves: () => import('../data/rse-moves'),
+    encounters: () => import('../data/rse-encounters'),
+    abilities: () => import('../data/rse-abilities'),
+  },
 };
 
 /** `defer`: o chunk só baixa na primeira inscrição, e fica em cache depois. */

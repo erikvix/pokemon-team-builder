@@ -55,7 +55,7 @@ import { artworkUrl } from '../../core/data/sprites';
                 height="96"
                 loading="lazy"
                 decoding="async"
-                class="-mx-2 size-24"
+                [class]="game().artworkIds.length > 2 ? '-mx-3 size-20' : '-mx-2 size-24'"
               />
             }
           </span>
@@ -117,12 +117,18 @@ export class GameCard {
 
   protected readonly maxTeamSize = MAX_TEAM_SIZE;
 
-  /** `151 Pokémon · #001–#151`. */
+  /**
+   * `151 Pokémon · #001–#151` quando a lista é contínua; senão só a contagem
+   * (a de Hoenn pula números, e uma faixa daria a ideia errada).
+   */
   protected readonly range = computed(() => {
     const ids = this.game().pokemonIds;
     const from = Math.min(...ids);
     const to = Math.max(...ids);
-    return `${ids.length} Pokémon · ${pokedexNumber(from)}–${pokedexNumber(to)}`;
+    const count = `${ids.length} Pokémon`;
+    return to - from + 1 === ids.length
+      ? `${count} · ${pokedexNumber(from)}–${pokedexNumber(to)}`
+      : count;
   });
 
   protected artwork(id: number): string {

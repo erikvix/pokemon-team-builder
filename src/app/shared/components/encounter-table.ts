@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import type { Game, GameVersion } from '../../core/data/games';
-import type { PokemonType } from '../../core/data/pokemon-types';
 import type {
   EncounterCondition,
   EncounterMethod,
@@ -24,6 +23,10 @@ const METHOD_LABEL: Readonly<Record<EncounterMethod, string>> = {
   'roaming-water': 'Errante (água)',
   headbutt: 'Headbutt',
   'squirt-bottle': 'SquirtBottle',
+  seaweed: 'Dive (alga)',
+  'feebas-tile-fishing': 'Pesca (pontos do Feebas)',
+  'devon-scope': 'Devon Scope',
+  'wailmer-pail': 'Wailmer Pail',
 };
 
 const CONDITION_LABEL: Readonly<Record<EncounterCondition, string>> = {
@@ -84,11 +87,11 @@ const GUARANTEED: ReadonlySet<EncounterMethod> = new Set([
                     conditionLabel[condition]
                   }}</span>
                 }
-                @if (versionOnly(row.versions); as version) {
+                @if (versionsOnly(row.versions); as versions) {
                   <span
                     class="rounded border px-1 font-medium text-foreground"
-                    [style.border-color]="versionColor(version.colorType)"
-                    >Só {{ version.label }}</span
+                    [style.border-color]="versionColor(versions)"
+                    >Só {{ versionLabel(versions) }}</span
                   >
                 }
               </span>
@@ -116,15 +119,26 @@ export class EncounterTable {
   protected readonly conditionLabel = CONDITION_LABEL;
   protected readonly guaranteed = GUARANTEED;
 
-  /** A versão, quando o encontro é exclusivo de uma delas. */
-  protected versionOnly(versions: GameVersions): GameVersion | undefined {
-    return versions === 'both'
-      ? undefined
-      : this.game().versions.find((version) => version.id === versions);
+  /** As versões, quando o encontro não existe em todas (`Só Ruby e Emerald`). */
+  protected versionsOnly(versions: GameVersions): readonly GameVersion[] | undefined {
+    if (versions === 'all') {
+      return undefined;
+    }
+    return this.game().versions.filter((version) => versions.includes(version.id));
   }
 
-  /** Borda na cor da capa (Fogo para FireRed, Elétrico para HeartGold…). */
-  protected versionColor(type: PokemonType): string {
-    return `color-mix(in oklab, var(--type-${type}) 60%, transparent)`;
+  protected versionLabel(versions: readonly GameVersion[]): string {
+    const labels = versions.map((version) => version.label);
+    return labels.length > 1
+      ? `${labels.slice(0, -1).join(', ')} e ${labels.at(-1)}`
+      : (labels[0] ?? '');
+  }
+
+  /** Borda na cor da capa (Fogo para FireRed…); com mais de uma versão, neutra. */
+  protected versionColor(versions: readonly GameVersion[]): string {
+    const only = versions.length === 1 ? versions[0] : undefined;
+    return only
+      ? `color-mix(in oklab, var(--type-${only.colorType}) 60%, transparent)`
+      : 'var(--border)';
   }
 }

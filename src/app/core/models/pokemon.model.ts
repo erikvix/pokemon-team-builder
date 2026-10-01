@@ -141,7 +141,11 @@ export type EncounterMethod =
   | 'pokeflute'
   | 'npc-trade'
   | 'roaming-grass'
-  | 'roaming-water';
+  | 'roaming-water'
+  | 'seaweed'
+  | 'feebas-tile-fishing'
+  | 'devon-scope'
+  | 'wailmer-pail';
 
 /**
  * Condição para o encontro acontecer (HGSS): horário do dia, rádio, swarm,
@@ -159,11 +163,12 @@ export type EncounterCondition =
   | 'headbutt-common'
   | 'headbutt-rare';
 
-/** As duas versões de cada jogo. */
-export type VersionId = 'firered' | 'leafgreen' | 'heartgold' | 'soulsilver';
+/** As versões de cada jogo. */
+export type VersionId =
+  'firered' | 'leafgreen' | 'heartgold' | 'soulsilver' | 'ruby' | 'sapphire' | 'emerald';
 
-/** Em qual versão o encontro existe — `both` quando nas duas. */
-export type GameVersions = 'both' | VersionId;
+/** Em quais versões o encontro existe — `all` quando em todas as do jogo. */
+export type GameVersions = 'all' | readonly VersionId[];
 
 /** Um lugar onde o Pokémon aparece no jogo. */
 export interface PokemonEncounter {

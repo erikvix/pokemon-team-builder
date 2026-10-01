@@ -1,9 +1,10 @@
 import type { VersionId } from '../models/pokemon.model';
 import { AVAILABLE_IDS as FRLG_AVAILABLE_IDS } from './frlg-available';
 import { AVAILABLE_IDS as HGSS_AVAILABLE_IDS } from './hgss-available';
+import { AVAILABLE_IDS as RSE_AVAILABLE_IDS } from './rse-available';
 import type { PokemonType } from './pokemon-types';
 
-export type GameId = 'firered-leafgreen' | 'heartgold-soulsilver';
+export type GameId = 'firered-leafgreen' | 'heartgold-soulsilver' | 'ruby-sapphire-emerald';
 
 export interface GameVersion {
   readonly id: VersionId;
@@ -26,7 +27,7 @@ export interface Game {
   readonly generation: string;
   readonly region: string;
   readonly year: number;
-  readonly versions: readonly [GameVersion, GameVersion];
+  readonly versions: readonly GameVersion[];
   /** Logo do jogo (SVG em `public/games/`); sem logo, o card mostra `artworkIds`. */
   readonly logo: string | null;
   /** Artworks que ilustram o card quando não há logo (os lendários da capa). */
@@ -75,6 +76,25 @@ export const GAMES: readonly Game[] = [
     accentTypes: ['fire', 'psychic'],
     summary: 'Johto e Kanto: todos os Pokémon que dá para pegar, ganhar ou evoluir no jogo.',
     pokemonIds: HGSS_AVAILABLE_IDS,
+  },
+  {
+    id: 'ruby-sapphire-emerald',
+    shortTitle: 'Ruby / Sapphire / Emerald',
+    title: 'Pokémon Ruby / Sapphire / Emerald',
+    generation: 'Geração 3',
+    region: 'Hoenn',
+    year: 2002,
+    versions: [
+      { id: 'ruby', label: 'Ruby', colorType: 'fire' },
+      { id: 'sapphire', label: 'Sapphire', colorType: 'water' },
+      { id: 'emerald', label: 'Emerald', colorType: 'grass' },
+    ],
+    logo: null,
+    artworkIds: [383, 384, 382],
+    accentTypes: ['fire', 'grass', 'water'],
+    summary:
+      'Hoenn: todos os Pokémon que dá para pegar, ganhar ou evoluir em Ruby, Sapphire ou Emerald.',
+    pokemonIds: RSE_AVAILABLE_IDS,
   },
 ];
 

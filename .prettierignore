@@ -9,3 +9,7 @@ src/app/core/data/hgss-available.ts
 src/app/core/data/frlg-available.ts
 src/app/core/data/frlg-abilities.ts
 src/app/core/data/hgss-abilities.ts
+src/app/core/data/rse-moves.ts
+src/app/core/data/rse-encounters.ts
+src/app/core/data/rse-available.ts
+src/app/core/data/rse-abilities.ts

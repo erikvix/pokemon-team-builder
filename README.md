@@ -1,7 +1,8 @@
 # Pokémon Team Builder
 
-Monte times de até 6 Pokémon para **FireRed/LeafGreen** (#001–#151) ou
-**HeartGold/SoulSilver** (os obtíveis no jogo, até #493) e veja na hora as
+Monte times de até 6 Pokémon para **FireRed/LeafGreen** (#001–#151),
+**HeartGold/SoulSilver** (os obtíveis no jogo, até #493) ou
+**Ruby/Sapphire/Emerald** (os obtíveis em Hoenn, até #386) e veja na hora as
 forças e fraquezas do time. Cada jogo guarda o seu time.
 
 Fase atual: **só frontend**. Não há backend — `PokemonService` é a única porta
@@ -26,7 +27,7 @@ Regerar o índice da Pokédex a partir da PokeAPI (só quando precisar):
 npm run generate:pokedex                # índice nacional #001–#493
 npm run generate:encounters -- hgss     # locais + obtíveis (rode antes dos ataques)
 npm run generate:moves -- hgss          # ataques
-# troque `hgss` por `frlg` para FireRed/LeafGreen
+# troque `hgss` por `frlg` (FireRed/LeafGreen) ou `rse` (Ruby/Sapphire/Emerald)
 ```
 
 ## Stack
@@ -72,7 +73,7 @@ scripts/vectorize-logo.py
 
 | Rota           | O que faz                                                           |
 | -------------- | ------------------------------------------------------------------- |
-| `/`            | Escolha do jogo (FRLG ou HGSS); leva para `/team?jogo=…`            |
+| `/`            | Escolha do jogo (FRLG, HGSS ou RSE); leva para `/team?jogo=…`       |
 | `/pokedex`     | Grid do jogo atual, busca com debounce, filtro por tipo, ordenação  |
 | `/pokemon/:id` | Artwork, ficha, base stats, eficácia de tipos, linha evolutiva      |
 | `/team`        | 6 slots, análise do time, ficha (stats, evolução, locais) e ataques |
@@ -89,8 +90,12 @@ versionado em `core/data/national-pokedex.ts`; cada jogo filtra os seus
 Em HGSS, "obtível" = aparece em algum local, ou evolui/nasce (Creche) de quem
 aparece — sem as evoluções que pedem um local de Sinnoh (Leafeon, Magnezone…)
 e sem quem só vem por troca ou evento (Rayquaza, Dialga, Palkia, Giratina; lista
-em `scripts/lib.mjs`). Os da geração 3 e 4 que ficam vêm de mecânicas do
-próprio jogo: presente do Steven, rádio (Hoenn/Sinnoh Sound), swarms e Safari. O detalhe continua vindo da PokeAPI em tempo real,
+em `scripts/lib.mjs`); os da geração 3 e 4 que ficam vêm de mecânicas do
+próprio jogo: presente do Steven, rádio (Hoenn/Sinnoh Sound), swarms e Safari.
+Em RSE vale o mesmo critério: ficam de fora quem só vem por ingresso ou disco
+de evento (Mew, Lugia, Ho-Oh, Jirachi, Deoxys), e os ataques usam a lista de
+Emerald, que tem os mesmos níveis e TMs de Ruby/Sapphire mais os tutores.
+O detalhe continua vindo da PokeAPI em tempo real,
 com cache por id na sessão. Mesmo assim `PokemonService.list()` devolve
 `Observable`: a assinatura já é a que o backend vai ter, e as telas tratam
 carregando/vazio/erro desde agora.

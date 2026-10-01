@@ -20,16 +20,18 @@ describe('HomePage', () => {
     return fixture;
   }
 
-  it('mostra FireRed/LeafGreen e HeartGold/SoulSilver', () => {
+  it('mostra FireRed/LeafGreen, HeartGold/SoulSilver e Ruby/Sapphire/Emerald', () => {
     const fixture = render();
     const cards = fixture.nativeElement.querySelectorAll('app-game-card');
-    expect(cards).toHaveLength(2);
+    expect(cards).toHaveLength(3);
 
     const text: string = fixture.nativeElement.textContent;
     expect(text).toContain('Pokémon FireRed / LeafGreen');
     expect(text).toContain('151 Pokémon · #001–#151');
     expect(text).toContain('Pokémon HeartGold / SoulSilver');
     expect(text).toContain('Johto e Kanto');
+    expect(text).toContain('Pokémon Ruby / Sapphire / Emerald');
+    expect(text).toContain('Hoenn');
   });
 
   it('leva para a tela do time do jogo clicado', () => {
@@ -39,6 +41,7 @@ describe('HomePage', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/team?jogo=firered-leafgreen',
       '/team?jogo=heartgold-soulsilver',
+      '/team?jogo=ruby-sapphire-emerald',
     ]);
   });
 

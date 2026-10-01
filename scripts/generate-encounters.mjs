@@ -8,10 +8,10 @@
  *
  * Também escreve `<jogo>-available.ts`: os Pokémon do jogo na ordem da
  * história (`scripts/progression.mjs`). Para jogos com `ids: 'available'`
- * (HGSS) a lista é de quem aparece no jogo, mais quem se consegue a partir
+ * (HGSS, RSE) a lista é de quem aparece no jogo, mais quem se consegue a partir
  * deles evoluindo ou reproduzindo.
  *
- * Uso: node scripts/generate-encounters.mjs <frlg|hgss>
+ * Uso: node scripts/generate-encounters.mjs <frlg|hgss|rse>
  */
 import { writeFile } from 'node:fs/promises';
 import {
@@ -29,6 +29,10 @@ import { PROGRESSION } from './progression.mjs';
 const game = gameFromArgs();
 const progression = PROGRESSION[game.key];
 const VERSIONS = new Set(game.versions);
+/** Último id que o jogo pode ter (RSE vai até #386). */
+const LAST_ID = game.lastId ?? LAST_NATIONAL_ID;
+/** Áreas que só se acessam com ingresso de evento (Southern Island, Navel Rock…). */
+const EVENT_AREAS = new Set(game.eventAreas ?? []);
 const unknownAreas = new Set();
 
 /**
@@ -51,6 +55,10 @@ const METHODS = new Set([
   'npc-trade',
   'roaming-grass',
   'roaming-water',
+  'seaweed',
+  'feebas-tile-fishing',
+  'devon-scope',
+  'wailmer-pail',
 ]);
 
 /** Condições que mudam onde/quando aparece. Estados "desligados" ficam de fora. */
@@ -94,11 +102,15 @@ const METHOD_ORDER = [
   'old-rod',
   'good-rod',
   'super-rod',
+  'seaweed',
+  'feebas-tile-fishing',
   'rock-smash',
   'headbutt',
   'roaming-grass',
   'roaming-water',
   'squirt-bottle',
+  'wailmer-pail',
+  'devon-scope',
   'pokeflute',
   'static',
   'gift',
@@ -112,9 +124,23 @@ async function areaName(resource) {
     const data = await getJson(resource.url);
     const english = data.names.find((item) => item.language.name === 'en')?.name;
     // A PokeAPI chama algumas rotas de "Road"; nos jogos é "Route".
-    areaNames.set(resource.name, (english ?? resource.name).replace(/^Road (\d)/, 'Route $1'));
+    areaNames.set(
+      resource.name,
+      (english ?? readableSlug(resource.name)).replace(/^Road (\d)/, 'Route $1'),
+    );
   }
   return areaNames.get(resource.name);
+}
+
+/** `team-aqua-hideout-area` → `Team Aqua Hideout`; `shoal-cave-b2f` → `Shoal Cave B2F`. */
+function readableSlug(slug) {
+  return slug
+    .replace(/-area$/, '')
+    .split('-')
+    .map((word) =>
+      /^b?\d+f$/.test(word) ? word.toUpperCase() : word[0].toUpperCase() + word.slice(1),
+    )
+    .join(' ');
 }
 
 const skipped = new Set();
@@ -124,6 +150,7 @@ async function fetchEncounters(id) {
   /** área|método|condições → linha, juntando as duas versões. */
   const merged = new Map();
   for (const area of data) {
+    if (EVENT_AREAS.has(area.location_area.name)) continue;
     for (const version of area.version_details) {
       if (!VERSIONS.has(version.version.name)) continue;
       const bySlot = new Map();
@@ -207,7 +234,11 @@ function collapseTimes(rows) {
         timeless || times.size === TIMES.length
           ? row.conditions
           : [...TIMES.filter((t) => times.has(t)), ...row.conditions],
-      versions: row.versions.size === VERSIONS.size ? 'both' : [...row.versions][0],
+      // `all` nas versões todas; senão a lista, na ordem do jogo (Ruby, Emerald…).
+      versions:
+        row.versions.size === VERSIONS.size
+          ? 'all'
+          : game.versions.filter((version) => row.versions.has(version)),
     }))
     .sort(
       (a, b) =>
@@ -274,7 +305,7 @@ function availableFrom(encounteredIds, edges) {
   while (grew) {
     grew = false;
     for (const { parent, child, reachable } of edges) {
-      if (parent > LAST_NATIONAL_ID || child > LAST_NATIONAL_ID) continue;
+      if (parent > LAST_ID || child > LAST_ID) continue;
       if (blocked.has(parent) || blocked.has(child)) continue;
       if (available.has(parent) && reachable && !available.has(child)) {
         available.add(child);
@@ -330,7 +361,13 @@ function rowStep(row) {
  */
 function storyOrder(ids, evolution) {
   const never = progression.areas.length + 1;
-  const own = new Map(ids.map((id) => [id, Math.min(never, ...(byId.get(id) ?? []).map(rowStep))]));
+  const own = new Map(
+    ids.map((id) => {
+      const first = Math.min(never, ...(byId.get(id) ?? []).map(rowStep));
+      const floor = progression.notBefore?.[id];
+      return [id, floor ? Math.max(first, stepOf(floor)) : first];
+    }),
+  );
   const familyStep = new Map();
   for (const id of ids) {
     const family = evolution.root.get(id) ?? id;
@@ -355,8 +392,7 @@ function storyOrder(ids, evolution) {
   });
 }
 
-const candidates =
-  game.ids === 'available' ? range(1, LAST_NATIONAL_ID) : range(game.ids.from, game.ids.to);
+const candidates = game.ids === 'available' ? range(1, LAST_ID) : range(game.ids.from, game.ids.to);
 const entries = await mapWithConcurrency(candidates, fetchEncounters);
 const byId = new Map(entries.map((entry) => [entry.id, entry.rows]));
 
@@ -398,12 +434,16 @@ const body = ids
     const lines = rows.map(
       (row) =>
         `    { area: ${str(row.area)}, method: '${row.method}', minLevel: ${row.minLevel}, ` +
-        `maxLevel: ${row.maxLevel}, chance: ${row.chance}, versions: '${row.versions}', ` +
+        `maxLevel: ${row.maxLevel}, chance: ${row.chance}, versions: ${versionsLiteral(row.versions)}, ` +
         `conditions: [${row.conditions.map(str).join(', ')}] },`,
     );
     return `  ${id}: [\n${lines.join('\n')}\n  ],`;
   })
   .join('\n');
+
+function versionsLiteral(versions) {
+  return versions === 'all' ? "'all'" : `[${versions.map(str).join(', ')}]`;
+}
 
 const fileName = `${game.key}-encounters.ts`;
 const file = `// ARQUIVO GERADO — não edite à mão.

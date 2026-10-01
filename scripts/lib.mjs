@@ -14,7 +14,9 @@ export const LAST_NATIONAL_ID = 493;
  * quais Pokémon gerar: um intervalo fixo, ou `'available'` para usar a lista
  * de obtíveis que o gerador de locais escreve (`hgss-available.ts`).
  * `unobtainable` tira da lista quem a PokeAPI mostra no jogo mas que, sem
- * troca com outro cartucho ou evento, não se consegue.
+ * troca com outro cartucho ou evento, não se consegue. `lastId` é o último
+ * Pokémon que existia no jogo, e `eventAreas` são áreas só acessíveis com
+ * ingresso de evento — os encontros delas são ignorados.
  */
 export const GAMES = {
   frlg: {
@@ -30,12 +32,28 @@ export const GAMES = {
     versions: ['heartgold', 'soulsilver'],
     generation: 4,
     ids: 'available',
+    lastId: 493,
     unobtainable: {
       384: 'Rayquaza: precisa de Kyogre e Groudon juntos, um de cada versão',
       483: 'Dialga: só com o Arceus de evento, nas Sinjoh Ruins',
       484: 'Palkia: só com o Arceus de evento, nas Sinjoh Ruins',
       487: 'Giratina: só com o Arceus de evento, nas Sinjoh Ruins',
     },
+  },
+  rse: {
+    key: 'rse',
+    // Emerald: mesmos níveis e TMs de Ruby/Sapphire, mais os tutores.
+    versionGroup: 'emerald',
+    versions: ['ruby', 'sapphire', 'emerald'],
+    generation: 3,
+    ids: 'available',
+    lastId: 386,
+    eventAreas: [
+      'southern-island-area', // Latias/Latios com o Eon Ticket (eles também vagam por Hoenn)
+      'faraway-island-area', // Mew, Old Sea Map
+      'birth-island-area', // Deoxys, AuroraTicket
+      'navel-rock-area', // Lugia e Ho-Oh, MysticTicket
+    ],
   },
 };
 

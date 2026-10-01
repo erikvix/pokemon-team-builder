@@ -6,6 +6,7 @@ import { PokemonDataError, PokemonService } from './pokemon.service';
 
 const FRLG = 'firered-leafgreen';
 const HGSS = 'heartgold-soulsilver';
+const RSE = 'ruby-sapphire-emerald';
 
 function makeService(): PokemonService {
   TestBed.resetTestingModule();
@@ -65,7 +66,9 @@ describe('PokemonService.getEncounters', () => {
   it('marca exclusivos de versão (Ekans só em FireRed)', async () => {
     const encounters = await firstValueFrom(makeService().getEncounters(23, FRLG));
     expect(encounters.length).toBeGreaterThan(0);
-    expect(encounters.every((row) => row.versions === 'firered')).toBe(true);
+    expect(
+      encounters.every((row) => row.versions !== 'all' && row.versions.join() === 'firered'),
+    ).toBe(true);
   });
 
   it('inclui presentes e encontros fixos, e fica vazio para quem só evolui', async () => {
@@ -168,5 +171,35 @@ describe('PokemonService.getAbilities', () => {
     await expect(firstValueFrom(makeService().getAbilities(152, FRLG))).rejects.toBeInstanceOf(
       PokemonDataError,
     );
+  });
+});
+
+describe('PokemonService em Ruby/Sapphire/Emerald', () => {
+  it('lista os obtíveis de Hoenn na ordem da história, sem os de evento', () => {
+    const list = makeService().listSync(RSE);
+    const ids = new Set(list.map((pokemon) => pokemon.id));
+    expect(list.slice(0, 3).map((pokemon) => pokemon.name)).toEqual([
+      'treecko',
+      'grovyle',
+      'sceptile',
+    ]);
+    // Mew, Lugia, Ho-Oh, Jirachi e Deoxys só com ingresso ou disco de evento.
+    expect([151, 249, 250, 385, 386].some((id) => ids.has(id))).toBe(false);
+    // Latias/Latios vagam por Hoenn; os iniciais de Johto são presente do Birch.
+    expect(ids.has(380) && ids.has(381) && ids.has(152)).toBe(true);
+    expect(Math.max(...ids)).toBeLessThanOrEqual(386);
+  });
+
+  it('marca encontros que existem só em parte das versões', async () => {
+    const service = makeService();
+    // Seedot (Route 102): Ruby e Emerald; Lotad no lugar em Sapphire.
+    const seedot = await firstValueFrom(service.getEncounters(273, RSE));
+    const route102 = seedot.find((row) => row.area === 'Route 102');
+    expect(route102?.versions).toEqual(['ruby', 'emerald']);
+  });
+
+  it('traz métodos de Hoenn, como o Devon Scope do Kecleon', async () => {
+    const kecleon = await firstValueFrom(makeService().getEncounters(352, RSE));
+    expect(kecleon.map((row) => row.method)).toContain('devon-scope');
   });
 });
