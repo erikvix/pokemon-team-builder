@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import type { MoveCategory, MoveLearnMethod, PokemonMove } from '../../core/models/pokemon.model';
+import type { MoveLearnMethod, PokemonMove } from '../../core/models/pokemon.model';
+import { MoveCategoryBadge } from './move-category-badge';
 import { TypeBadge } from './type-badge';
 
 export const MOVE_METHODS: ReadonlyArray<{
@@ -12,12 +13,6 @@ export const MOVE_METHODS: ReadonlyArray<{
   { key: 'tutor', label: 'Tutor' },
 ];
 
-const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
-  physical: 'Físico',
-  special: 'Especial',
-  status: 'Status',
-};
-
 /**
  * Tabela de golpes de uma forma de aprender: nível ou máquina (quando cabe),
  * golpe com tipo e descrição, categoria, poder, precisão e PP. Usada no modal
@@ -26,7 +21,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
 @Component({
   selector: 'app-move-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TypeBadge],
+  imports: [MoveCategoryBadge, TypeBadge],
   template: `
     <table class="w-full border-collapse text-sm">
       <caption class="sr-only">
@@ -42,7 +37,7 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
             </th>
           }
           <th scope="col" class="py-2 pr-2 font-medium">Golpe</th>
-          <th scope="col" class="hidden py-2 pr-2 font-medium sm:table-cell">Categoria</th>
+          <th scope="col" class="hidden w-24 py-2 pr-2 font-medium sm:table-cell">Categoria</th>
           <th scope="col" class="w-12 py-2 pr-2 text-right font-medium">
             <abbr title="Poder" class="no-underline">Pod.</abbr>
           </th>
@@ -75,16 +70,15 @@ const CATEGORY_LABEL: Readonly<Record<MoveCategory, string>> = {
                     >???</span
                   >
                 }
-                <span class="text-[11px] text-muted-foreground sm:hidden">
-                  {{ categoryLabel[move.category] }}
-                </span>
+                <!-- No mobile a coluna some; o selo vem junto do nome. -->
+                <app-move-category-badge class="sm:hidden" [category]="move.category" />
               </div>
               @if (showDescriptions() && move.description) {
                 <p class="mt-0.5 text-xs text-muted-foreground">{{ move.description }}</p>
               }
             </td>
-            <td class="hidden py-2 pr-2 text-xs sm:table-cell">
-              {{ categoryLabel[move.category] }}
+            <td class="hidden py-2 pr-2 sm:table-cell">
+              <app-move-category-badge [category]="move.category" />
             </td>
             <td class="py-2 pr-2 text-right font-mono text-xs">{{ move.power ?? '—' }}</td>
             <td class="py-2 pr-2 text-right font-mono text-xs">{{ move.accuracy ?? '—' }}</td>
@@ -102,6 +96,4 @@ export class MoveTable {
   /** Legenda para leitor de tela (`Ataques de Pikachu — Por nível`). */
   readonly caption = input.required<string>();
   readonly showDescriptions = input<boolean>(true);
-
-  protected readonly categoryLabel = CATEGORY_LABEL;
 }

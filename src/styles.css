@@ -53,6 +53,11 @@
   --type-dark: #705746;
   --type-steel: #7a7a97;
   --type-fairy: #c25f91;
+
+  /* Categoria do golpe — ícone colorido, sempre com o nome escrito ao lado */
+  --category-physical: #d4521b;
+  --category-special: #3d6fd6;
+  --category-status: #8a8a96;
 }
 
 :root.dark {
@@ -100,6 +105,10 @@
   --type-dark: #a08a73;
   --type-steel: #b7b7ce;
   --type-fairy: #d685ad;
+
+  --category-physical: #ff7a45;
+  --category-special: #7aa2ff;
+  --category-status: #b4b4c0;
 }
 
 @theme inline {

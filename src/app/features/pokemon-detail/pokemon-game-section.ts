@@ -6,13 +6,19 @@ import {
   inject,
   input,
   linkedSignal,
+  signal,
 } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { GAMES, type Game, type GameId } from '../../core/data/games';
-import type { MoveLearnMethod } from '../../core/models/pokemon.model';
+import type {
+  MoveCategory,
+  MoveLearnMethod,
+  PokemonMoveset,
+} from '../../core/models/pokemon.model';
 import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
 import { EncounterTable } from '../../shared/components/encounter-table';
+import { filterMoveset, MoveCategoryFilter } from '../../shared/components/move-category-filter';
 import { MOVE_METHODS, MoveTable } from '../../shared/components/move-table';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { CardDirective } from '../../shared/ui/card.directive';
@@ -32,6 +38,7 @@ import { Skeleton } from '../../shared/ui/skeleton';
     CardDirective,
     EncounterTable,
     Icon,
+    MoveCategoryFilter,
     MoveTable,
     NgTemplateOutlet,
     Skeleton,
@@ -119,12 +126,20 @@ import { Skeleton } from '../../shared/ui/skeleton';
 
         <!-- Ataques -->
         <div class="flex flex-col gap-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Ataques
-          </h3>
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Ataques
+            </h3>
+            <app-move-category-filter [(value)]="category" />
+          </div>
           @if (moves.error()) {
             <ng-container *ngTemplateOutlet="failed; context: { retry: moves }" />
-          } @else if (moves.value(); as moveset) {
+          } @else if (filteredMoves(); as moveset) {
+            @if (isEmpty(moveset)) {
+              <p class="text-sm text-muted-foreground">
+                Nenhum golpe dessa categoria em {{ current.shortTitle }}.
+              </p>
+            }
             <div class="grid gap-x-6 gap-y-4 xl:grid-cols-2">
               @for (item of methods; track item.key) {
                 @if (moveset[item.key]; as list) {
@@ -185,6 +200,9 @@ export class PokemonGameSection {
 
   protected readonly methods: ReadonlyArray<{ key: MoveLearnMethod; label: string }> = MOVE_METHODS;
 
+  /** Filtro de categoria dos ataques; vale para todas as tabelas. */
+  protected readonly category = signal<MoveCategory | 'all'>('all');
+
   /** Jogos em que o Pokémon existe, na ordem da tela inicial. */
   protected readonly games = computed<readonly Game[]>(() =>
     GAMES.filter((game) => game.pokemonIds.includes(this.pokemonId())),
@@ -216,6 +234,15 @@ export class PokemonGameSection {
     params: this.params,
     stream: ({ params }) => this.pokemon.getEncounters(params.id, params.gameId),
   });
+  protected readonly filteredMoves = computed(() => {
+    const moveset = this.moves.value();
+    return moveset ? filterMoveset(moveset, this.category()) : undefined;
+  });
+
+  protected isEmpty(moveset: PokemonMoveset): boolean {
+    return this.methods.every((item) => moveset[item.key].length === 0);
+  }
+
   protected readonly moves = rxResource({
     params: this.params,
     stream: ({ params }) => this.pokemon.getMoves(params.id, params.gameId),

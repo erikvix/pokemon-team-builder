@@ -2,9 +2,15 @@ import { DIALOG_DATA, DialogRef } from '@angular/cdk/dialog';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { pokedexNumber } from '../../core/data/sprites';
-import type { MoveLearnMethod, PokemonMove, PokemonSummary } from '../../core/models/pokemon.model';
+import type {
+  MoveCategory,
+  MoveLearnMethod,
+  PokemonMove,
+  PokemonSummary,
+} from '../../core/models/pokemon.model';
 import { GameService } from '../../core/services/game.service';
 import { PokemonService } from '../../core/services/pokemon.service';
+import { filterMoveset, MoveCategoryFilter } from '../../shared/components/move-category-filter';
 import { MOVE_METHODS, MoveTable } from '../../shared/components/move-table';
 import { ButtonDirective } from '../../shared/ui/button.directive';
 import { Icon } from '../../shared/ui/icon';
@@ -23,7 +29,7 @@ const METHODS = MOVE_METHODS;
 @Component({
   selector: 'app-team-moves-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ButtonDirective, Icon, MoveTable, Skeleton, TeamMemberTabs],
+  imports: [ButtonDirective, Icon, MoveCategoryFilter, MoveTable, Skeleton, TeamMemberTabs],
   host: {
     class:
       'flex max-h-[85vh] w-[min(46rem,94vw)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg',
@@ -72,7 +78,7 @@ const METHODS = MOVE_METHODS;
           (click)="method.set(item.key)"
         >
           {{ item.label }}
-          @if (moveset(); as set) {
+          @if (filtered(); as set) {
             <span class="font-mono text-[11px] text-muted-foreground">{{
               set[item.key].length
             }}</span>
@@ -80,6 +86,8 @@ const METHODS = MOVE_METHODS;
         </button>
       }
     </div>
+
+    <app-move-category-filter class="px-3 pt-2" [(value)]="category" />
 
     <div class="flex-1 overflow-y-auto p-3" aria-live="polite">
       @if (errorMessage(); as message) {
@@ -100,7 +108,9 @@ const METHODS = MOVE_METHODS;
         </div>
       } @else if (moves().length === 0) {
         <p class="p-8 text-center text-sm text-muted-foreground">
-          {{ selected().displayName }} não aprende golpes dessa forma em {{ game.shortTitle }}.
+          {{ selected().displayName }} não aprende golpes
+          {{ category() === 'all' ? 'dessa forma' : 'dessa forma e categoria' }} em
+          {{ game.shortTitle }}.
         </p>
       } @else {
         <app-move-table
@@ -138,8 +148,14 @@ export class TeamMovesDialog {
 
   protected readonly moveset = this.resource.value;
   protected readonly isLoading = this.resource.isLoading;
+  /** Filtro de categoria; as contagens das abas seguem ele. */
+  protected readonly category = signal<MoveCategory | 'all'>('all');
+  protected readonly filtered = computed(() => {
+    const moveset = this.moveset();
+    return moveset ? filterMoveset(moveset, this.category()) : undefined;
+  });
   protected readonly moves = computed<readonly PokemonMove[]>(
-    () => this.moveset()?.[this.method()] ?? [],
+    () => this.filtered()?.[this.method()] ?? [],
   );
   protected readonly errorMessage = computed(() => {
     const error = this.resource.error();
