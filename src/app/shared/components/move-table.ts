@@ -37,7 +37,9 @@ export const MOVE_METHODS: ReadonlyArray<{
             </th>
           }
           <th scope="col" class="py-2 pr-2 font-medium">Golpe</th>
-          <th scope="col" class="hidden w-24 py-2 pr-2 font-medium sm:table-cell">Categoria</th>
+          <th scope="col" class="w-10 py-2 pr-2 text-center font-medium">
+            <abbr title="Categoria" class="no-underline">Cat.</abbr>
+          </th>
           <th scope="col" class="w-12 py-2 pr-2 text-right font-medium">
             <abbr title="Poder" class="no-underline">Pod.</abbr>
           </th>
@@ -70,14 +72,12 @@ export const MOVE_METHODS: ReadonlyArray<{
                     >???</span
                   >
                 }
-                <!-- No mobile a coluna some; o selo vem junto do nome. -->
-                <app-move-category-badge class="sm:hidden" [category]="move.category" />
               </div>
               @if (showDescriptions() && move.description) {
                 <p class="mt-0.5 text-xs text-muted-foreground">{{ move.description }}</p>
               }
             </td>
-            <td class="hidden py-2 pr-2 sm:table-cell">
+            <td class="py-1.5 pr-2 text-center">
               <app-move-category-badge [category]="move.category" />
             </td>
             <td class="py-2 pr-2 text-right font-mono text-xs">{{ move.power ?? '—' }}</td>

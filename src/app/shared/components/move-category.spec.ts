@@ -40,25 +40,25 @@ describe('filterMoveset', () => {
 });
 
 describe('MoveTable', () => {
-  it('mostra a categoria com ícone e nome', () => {
+  it('mostra a categoria só com o ícone, com o nome na dica e no aria-label', () => {
     const fixture = TestBed.createComponent(MoveTable);
     fixture.componentRef.setInput('moves', MOVESET.levelUp);
     fixture.componentRef.setInput('method', 'levelUp');
     fixture.componentRef.setInput('caption', 'teste');
     fixture.detectChanges();
 
-    const all: HTMLElement[] = Array.from(
+    const badges: HTMLElement[] = Array.from(
       fixture.nativeElement.querySelectorAll('td app-move-category-badge'),
     );
-    // Um selo na coluna (desktop) e outro junto do nome, só no mobile.
-    const mobile = all.filter((badge) => badge.classList.contains('sm:hidden'));
-    const badges = all.filter((badge) => !badge.classList.contains('sm:hidden'));
-    expect(mobile).toHaveLength(3);
-    expect(badges.map((badge) => badge.textContent?.trim())).toEqual([
+    expect(badges).toHaveLength(3);
+    const icons = badges.map((badge) => badge.querySelector('[role="img"]'));
+    expect(icons.map((icon) => icon?.getAttribute('aria-label'))).toEqual([
       'Físico',
       'Status',
       'Especial',
     ]);
+    // Focável, para a dica abrir também pelo teclado.
+    expect(icons.every((icon) => icon?.getAttribute('tabindex') === '0')).toBe(true);
     expect(badges.every((badge) => badge.querySelector('svg') !== null)).toBe(true);
   });
 });

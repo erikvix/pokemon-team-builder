@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { MoveCategory } from '../../core/models/pokemon.model';
-import { cn } from '../ui/cn';
 
 export const MOVE_CATEGORIES: readonly MoveCategory[] = ['physical', 'special', 'status'];
 
@@ -55,32 +54,37 @@ export class MoveCategoryIcon {
   protected readonly color = computed(() => `var(--category-${this.category()})`);
 }
 
-/** Selo de categoria: ícone + nome, no mesmo molde do selo de tipo. */
+/**
+ * Selo de categoria: só o ícone, num quadradinho com a borda na cor da
+ * categoria. O nome aparece numa dica ao passar o mouse, ao focar pelo
+ * teclado ou ao tocar — e o leitor de tela lê o nome pelo `aria-label`.
+ */
 @Component({
   selector: 'app-move-category-badge',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [MoveCategoryIcon],
   template: `
-    <app-move-category-icon [category]="category()" [size]="12" />
-    <span>{{ label() }}</span>
+    <span
+      class="inline-grid size-6 place-items-center rounded-md border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ring)]"
+      [style.border-color]="borderColor()"
+      role="img"
+      tabindex="0"
+      [attr.aria-label]="label()"
+    >
+      <app-move-category-icon [category]="category()" [size]="14" />
+    </span>
+    <span
+      class="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-[11px] font-medium text-popover-foreground opacity-0 shadow-md transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100"
+      aria-hidden="true"
+      >{{ label() }}</span
+    >
   `,
-  host: {
-    '[class]': 'classes()',
-    '[style.border-color]': 'borderColor()',
-  },
+  host: { class: 'group relative inline-flex' },
 })
 export class MoveCategoryBadge {
   readonly category = input.required<MoveCategory>();
   protected readonly label = computed(() => MOVE_CATEGORY_LABEL[this.category()]);
   protected readonly borderColor = computed(
-    () => `color-mix(in oklab, var(--category-${this.category()}) 40%, transparent)`,
-  );
-  /** `class` de fora (ex.: `sm:hidden`) soma às classes do selo. */
-  readonly class = input<string>('');
-  protected readonly classes = computed(() =>
-    cn(
-      'inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium text-foreground',
-      this.class(),
-    ),
+    () => `color-mix(in oklab, var(--category-${this.category()}) 45%, transparent)`,
   );
 }
